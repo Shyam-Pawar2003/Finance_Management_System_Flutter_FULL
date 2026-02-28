@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'toggle_button.dart';
+import 'user_dashboard.dart';
+import 'subadmin_dashboard.dart';
+import 'hr_dashboard.dart';
+import 'finance_dashboard.dart';
+import 'custom_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -8,322 +14,225 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  bool _isPasswordHidden = true;
-  String _selectedRole = 'User'; // 'User', 'CompanyAdmin', 'Employee'
+  bool isUserLogin = true;
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+  String selectedRole = "";
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      // Navigate based on role
-      if (_selectedRole == 'CompanyAdmin') {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/company',
-          (route) => false,
-        );
-      } else if (_selectedRole == 'Employee') {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/employee-tasks',
-          (route) => false,
-        );
-      } else {
-        // Regular User
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/home',
-          (route) => false,
-        );
-      }
-    }
-  }
+  final TextEditingController companyIdController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green.shade400, Colors.green.shade800],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      backgroundColor: const Color(0xFFEDEFF2),
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 900, maxHeight: 600),
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 20)],
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.wallet,
-                      size: 60,
-                      color: Colors.green.shade700,
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF0F1C2E), Color(0xFF345D96)],
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  const Text(
-                    'Finance Manager',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  child: const Center(
+                    child: Text(
+                      "TECHCORP\nINDUSTRIES",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Manage Your Finances Efficiently',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 10,
-                    child: Padding(
-                      padding: const EdgeInsets.all(30.0),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Select Role',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: DropdownButton<String>(
-                                value: _selectedRole,
-                                isExpanded: true,
-                                underline: const SizedBox(),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: 'User',
-                                    child: Text('Regular User'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'CompanyAdmin',
-                                    child: Text('Company Authority'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'Employee',
-                                    child: Text('Employee'),
-                                  ),
-                                ],
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedRole = value!;
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              'Email',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _emailController,
-                              decoration: InputDecoration(
-                                hintText: 'Enter your email',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                ),
-                                prefixIcon: const Icon(Icons.email),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Colors.green,
-                                    width: 2,
-                                  ),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your email';
-                                }
-                                if (!value.contains('@')) {
-                                  return 'Please enter a valid email';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Password',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _isPasswordHidden,
-                              decoration: InputDecoration(
-                                hintText: 'Enter your password',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                ),
-                                prefixIcon: const Icon(Icons.lock),
-                                suffixIcon: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isPasswordHidden = !_isPasswordHidden;
-                                    });
-                                  },
-                                  child: Icon(
-                                    _isPasswordHidden
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Colors.green,
-                                    width: 2,
-                                  ),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your password';
-                                }
-                                if (value.length < 6) {
-                                  return 'Password must be at least 6 characters';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  "Don't have an account? ",
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.of(context)
-                                        .pushNamed('/register');
-                                  },
-                                  child: const Text(
-                                    'Register',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    children: [
+                      const Text("Welcome Back!",
+                          style: TextStyle(
+                              fontSize: 28, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 30),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ToggleButtonWidget(
+                            text: "USER LOGIN",
+                            isActive: isUserLogin,
+                            onTap: () {
+                              setState(() {
+                                isUserLogin = true;
+                                selectedRole = "";
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 20),
+                          ToggleButtonWidget(
+                            text: "COMPANY LOGIN",
+                            isActive: !isUserLogin,
+                            onTap: () {
+                              setState(() {
+                                isUserLogin = false;
+                                selectedRole = "";
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+                      TextField(
+                        controller: companyIdController,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.business),
+                          labelText: "Company ID",
+                          border: const OutlineInputBorder(),
+                          hintText: "Enter your company ID",
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.lock),
+                          labelText: "Password",
+                          border: const OutlineInputBorder(),
+                          hintText: "Enter your password",
+                        ),
+                      ),
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: null,
+                          child: Text('Forgot password?'),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text("Select Role:",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: isUserLogin
+                                ? [
+                                    RadioListTile(
+                                      value: "Normal User",
+                                      groupValue: selectedRole,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          selectedRole = val!;
+                                        });
+                                      },
+                                      title: const Text("Normal User"),
+                                    ),
+                                  ]
+                                : [
+                                    RadioListTile(
+                                      value: "Sub-admin",
+                                      groupValue: selectedRole,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          selectedRole = val!;
+                                        });
+                                      },
+                                      title: const Text("Sub-admin"),
+                                    ),
+                                    RadioListTile(
+                                      value: "HR Manager",
+                                      groupValue: selectedRole,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          selectedRole = val!;
+                                        });
+                                      },
+                                      title: const Text("HR Manager"),
+                                    ),
+                                    RadioListTile(
+                                      value: "Finance Manager",
+                                      groupValue: selectedRole,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          selectedRole = val!;
+                                        });
+                                      },
+                                      title: const Text("Finance Manager"),
+                                    ),
+                                    RadioListTile(
+                                      value: "Custom Permission",
+                                      groupValue: selectedRole,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          selectedRole = val!;
+                                        });
+                                      },
+                                      title: const Text("Custom Permission"),
+                                    ),
+                                  ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: login,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12.0),
+                            child: Text("SECURE LOGIN"),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  void login() {
+    if (selectedRole.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: const Text("Please select a role")),
+      );
+      return;
+    }
+
+    if (selectedRole == "Normal User") {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => const UserDashboard()));
+    } else if (selectedRole == "Sub-admin") {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => const SubAdminDashboard()));
+    } else if (selectedRole == "HR Manager") {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => const HRDashboard()));
+    } else if (selectedRole == "Finance Manager") {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => const FinanceDashboard()));
+    } else {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => const CustomDashboard()));
+    }
   }
 }
