@@ -5,6 +5,9 @@ import 'Finance/PayrollPage.dart';
 import 'Finance/InvoicesPage.dart';
 import 'Finance/ReportsPage.dart';
 import 'Finance/EmployeesFinancePage.dart';
+import 'Finance/InboxFinancePage.dart';
+import 'Finance/CalendarFinancePage.dart';
+import 'Finance/MeetingFinancePage.dart';
 import 'Finance/SettingsFinancePage.dart';
 
 // Top-level main/MyApp removed; treat this file as a widget library only.
@@ -26,6 +29,9 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
     "Invoices",
     "Reports",
     "Employees",
+    "Inbox",
+    "Calendar",
+    "Meetings",
     "Settings"
   ];
 
@@ -36,6 +42,9 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
     Icons.receipt_long,
     Icons.bar_chart,
     Icons.people,
+    Icons.inbox_rounded,
+    Icons.calendar_month_rounded,
+    Icons.video_call_rounded,
     Icons.settings
   ];
 
@@ -133,6 +142,12 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
       case 5:
         return const EmployeesFinancePage();
       case 6:
+        return const InboxFinancePage();
+      case 7:
+        return const CalendarFinancePage();
+      case 8:
+        return const MeetingFinancePage();
+      case 9:
         return const SettingsFinancePage();
       default:
         return const DashboardFinancePage();
@@ -304,14 +319,3 @@ class TransactionTile extends StatelessWidget {
     );
   }
 }
-cd C:\Users\shyam\Downloads\Finance_Management_System_Flutter_FULL
-
-# If you haven't already committed your changes:
-git add .
-git commit -m "Initial import of finance flutter app"
-
-# add the GitHub origin (replace with your username + repo name)
-git remote add origin https://github.com/<your‑username>/<repo‑name>.git
-
-# push the current branch (usually main or master)
-git push -u origin main

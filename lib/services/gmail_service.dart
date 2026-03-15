@@ -1,6 +1,17 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+
+const String _gmailWebClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+const String _gmailServerClientId =
+    String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+const String _webClientIdPlaceholder =
+    'REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com';
 
 class GmailService {
   static final GmailService _instance = GmailService._internal();
@@ -15,28 +26,110 @@ class GmailService {
     scopes: [
       'https://www.googleapis.com/auth/gmail.readonly',
     ],
+    clientId: _gmailWebClientId.isEmpty ? null : _gmailWebClientId,
+    serverClientId: _gmailServerClientId.isEmpty ? null : _gmailServerClientId,
   );
 
   GoogleSignInAccount? _currentUser;
   gmail.GmailApi? _gmailApi;
+  http.Client? _authClient;
 
-  GoogleSignInAccount? get currentUser => _currentUser;
+  GoogleSignInAccount? get currentUser =>
+      _currentUser ?? _googleSignIn.currentUser;
+
+  String _signInHelpMessage(String details) {
+    final lowerDetails = details.toLowerCase();
+
+    if (kIsWeb &&
+        (lowerDetails.contains('clientid not set') ||
+            lowerDetails.contains('appclientid != null'))) {
+      return 'Google sign-in is not configured for web. Open web/index.html and replace the google-signin-client_id meta value with your real OAuth Web Client ID, or run with --dart-define=GOOGLE_WEB_CLIENT_ID=your_client_id.apps.googleusercontent.com.';
+    }
+
+    if (kIsWeb &&
+        _gmailWebClientId.trim().toLowerCase() ==
+            _webClientIdPlaceholder.toLowerCase()) {
+      return 'Web client ID is still a placeholder. Set a valid GOOGLE_WEB_CLIENT_ID or replace the value in web/index.html.';
+    }
+
+    if (kIsWeb &&
+        (lowerDetails.contains('invalid_client') ||
+            lowerDetails.contains('unauthorized_client'))) {
+      return 'Google sign-in client ID is invalid for this app. Verify the OAuth Web Client ID and allowed JavaScript origins in Google Cloud Console.';
+    }
+
+    if (lowerDetails.contains('apiexception: 10') ||
+        lowerDetails.contains('developer error') ||
+        lowerDetails.contains('oauth') ||
+        lowerDetails.contains('client id')) {
+      return 'Google sign-in configuration is incomplete. Check OAuth client IDs, SHA fingerprints, package name, and enabled Gmail API.';
+    }
+
+    return 'Google sign-in failed. Please verify Google OAuth setup and try again.';
+  }
+
+  Future<bool> restoreSession() async {
+    try {
+      final signedUser = _googleSignIn.currentUser;
+      if (signedUser != null) {
+        await _initializeApi(signedUser);
+        return true;
+      }
+
+      final restoredUser = await _googleSignIn.signInSilently();
+      if (restoredUser == null) {
+        return false;
+      }
+
+      await _initializeApi(restoredUser);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _initializeApi(GoogleSignInAccount account) async {
+    final headers = await account.authHeaders;
+    _authClient?.close();
+    _authClient = _GmailHttpClient(headers);
+    _currentUser = account;
+    _gmailApi = gmail.GmailApi(_authClient!);
+  }
+
+  Future<void> _ensureApiReady() async {
+    if (_gmailApi != null && _currentUser != null) {
+      return;
+    }
+
+    final user = currentUser;
+    if (user == null) {
+      throw Exception('Please sign in with Google first.');
+    }
+
+    await _initializeApi(user);
+  }
 
   /// Authenticate user and initialize Gmail API
   Future<bool> signIn() async {
     try {
-      _currentUser = await _googleSignIn.signIn();
-      if (_currentUser == null) return false;
+      final account = await _googleSignIn.signIn();
+      if (account == null) {
+        return false;
+      }
 
-      // Create authenticated HTTP client
-      final headers = await _currentUser!.authHeaders;
-      final client = _GmailHttpClient(headers);
-
-      _gmailApi = gmail.GmailApi(client);
+      await _initializeApi(account);
       return true;
-    } catch (e) {
-      print('Error signing in: $e');
-      return false;
+    } on PlatformException catch (error) {
+      final code = error.code.toLowerCase();
+      if (code.contains('cancel') || code.contains('canceled')) {
+        return false;
+      }
+
+      final message = (error.message ?? '').trim();
+      final details = message.isEmpty ? error.code : '$message (${error.code})';
+      throw Exception(_signInHelpMessage(details));
+    } catch (error) {
+      throw Exception(_signInHelpMessage(error.toString()));
     }
   }
 
@@ -45,13 +138,13 @@ class GmailService {
     await _googleSignIn.signOut();
     _currentUser = null;
     _gmailApi = null;
+    _authClient?.close();
+    _authClient = null;
   }
 
   /// Get unread emails from Gmail inbox
   Future<List<GmailEmailModel>> getUnreadEmails({int maxResults = 10}) async {
-    if (_gmailApi == null) {
-      throw Exception('Gmail API not initialized. Please sign in first.');
-    }
+    await _ensureApiReady();
 
     try {
       final messageList = await _gmailApi!.users.messages.list(
@@ -81,16 +174,13 @@ class GmailService {
 
       return emails;
     } catch (e) {
-      print('Error fetching unread emails: $e');
-      return [];
+      throw Exception('Unable to load unread emails. $e');
     }
   }
 
   /// Get all emails from Gmail inbox
   Future<List<GmailEmailModel>> getAllEmails({int maxResults = 20}) async {
-    if (_gmailApi == null) {
-      throw Exception('Gmail API not initialized. Please sign in first.');
-    }
+    await _ensureApiReady();
 
     try {
       final messageList = await _gmailApi!.users.messages.list(
@@ -119,8 +209,7 @@ class GmailService {
 
       return emails;
     } catch (e) {
-      print('Error fetching all emails: $e');
-      return [];
+      throw Exception('Unable to load inbox emails. $e');
     }
   }
 
@@ -129,9 +218,7 @@ class GmailService {
     String labelId, {
     int maxResults = 20,
   }) async {
-    if (_gmailApi == null) {
-      throw Exception('Gmail API not initialized. Please sign in first.');
-    }
+    await _ensureApiReady();
 
     try {
       final messageList = await _gmailApi!.users.messages.list(
@@ -161,23 +248,19 @@ class GmailService {
 
       return emails;
     } catch (e) {
-      print('Error fetching emails by label: $e');
-      return [];
+      throw Exception('Unable to load emails for this label. $e');
     }
   }
 
   /// Get email labels
   Future<List<String>> getLabels() async {
-    if (_gmailApi == null) {
-      throw Exception('Gmail API not initialized. Please sign in first.');
-    }
+    await _ensureApiReady();
 
     try {
       final labels = await _gmailApi!.users.labels.list('me');
       return labels.labels?.map((label) => label.name ?? '').toList() ?? [];
     } catch (e) {
-      print('Error fetching labels: $e');
-      return [];
+      throw Exception('Unable to fetch Gmail labels. $e');
     }
   }
 }
@@ -216,38 +299,86 @@ class GmailEmailModel {
           '';
     }
 
-    // Try to extract body from message
-    String? extractBody() {
-      try {
-        // First try to get body from parts
-        if (message.payload?.parts != null &&
-            message.payload!.parts!.isNotEmpty) {
-          final firstPart = message.payload!.parts!.first;
-          if (firstPart.body?.data != null) {
-            return firstPart.body!.data;
-          }
-        }
-        // Fallback to payload body
-        if (message.payload?.body?.data != null) {
-          return message.payload!.body!.data;
-        }
-        return null;
-      } catch (e) {
-        return null;
-      }
+    String decodeBase64Url(String value) {
+      final normalized = value.replaceAll('-', '+').replaceAll('_', '/');
+      final padding = (4 - normalized.length % 4) % 4;
+      final withPadding = '$normalized${'=' * padding}';
+      return utf8.decode(base64.decode(withPadding), allowMalformed: true);
     }
 
-    // Parse date safely
-    DateTime parseDate() {
-      try {
-        final dateStr = getHeader('Date');
-        if (dateStr.isEmpty) {
-          return DateTime.now();
+    String cleanBodyText(String rawText) {
+      var text = rawText;
+      text = text.replaceAll(RegExp(r'<[^>]*>'), ' ');
+      text = text
+          .replaceAll('&nbsp;', ' ')
+          .replaceAll('&amp;', '&')
+          .replaceAll('&lt;', '<')
+          .replaceAll('&gt;', '>')
+          .replaceAll('&quot;', '"')
+          .replaceAll('&#39;', "'");
+      text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+      return text;
+    }
+
+    String? extractBodyFromPart(gmail.MessagePart? part) {
+      if (part == null) {
+        return null;
+      }
+
+      final mimeType = part.mimeType?.toLowerCase() ?? '';
+      final data = part.body?.data;
+      if (data != null && data.isNotEmpty) {
+        try {
+          final decoded = decodeBase64Url(data);
+          final cleaned = cleanBodyText(decoded);
+          if (cleaned.isNotEmpty &&
+              (mimeType.contains('text/plain') ||
+                  mimeType.contains('text/html') ||
+                  mimeType.isEmpty)) {
+            return cleaned;
+          }
+        } catch (_) {
+          // Skip invalid body chunk and continue searching nested parts.
         }
-        return DateTime.parse(dateStr);
-      } catch (e) {
+      }
+
+      final nestedParts = part.parts ?? <gmail.MessagePart>[];
+      for (final nested in nestedParts) {
+        final nestedBody = extractBodyFromPart(nested);
+        if (nestedBody != null && nestedBody.isNotEmpty) {
+          return nestedBody;
+        }
+      }
+
+      return null;
+    }
+
+    DateTime parseDate() {
+      final rawDate = getHeader('Date').trim();
+      if (rawDate.isEmpty) {
         return DateTime.now();
       }
+
+      final cleanedDate = rawDate.replaceAll(RegExp(r'\s*\(.*\)$'), '').trim();
+      final patterns = [
+        'EEE, d MMM yyyy HH:mm:ss Z',
+        'EEE, dd MMM yyyy HH:mm:ss Z',
+        'd MMM yyyy HH:mm:ss Z',
+        'EEE, d MMM yyyy HH:mm Z',
+      ];
+
+      for (final pattern in patterns) {
+        try {
+          return DateFormat(pattern, 'en_US')
+              .parse(cleanedDate, true)
+              .toLocal();
+        } catch (_) {
+          continue;
+        }
+      }
+
+      final fallback = DateTime.tryParse(cleanedDate);
+      return (fallback ?? DateTime.now()).toLocal();
     }
 
     return GmailEmailModel(
@@ -257,7 +388,7 @@ class GmailEmailModel {
       snippet: message.snippet ?? '',
       date: parseDate(),
       isUnread: message.labelIds?.contains('UNREAD') ?? false,
-      body: extractBody(),
+      body: extractBodyFromPart(message.payload),
     );
   }
 }
@@ -271,8 +402,13 @@ class _GmailHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
-    // Add authentication headers to the request
     request.headers.addAll(_headers);
     return _inner.send(request);
+  }
+
+  @override
+  void close() {
+    _inner.close();
+    super.close();
   }
 }

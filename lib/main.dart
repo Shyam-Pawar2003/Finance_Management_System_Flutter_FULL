@@ -12,6 +12,7 @@ import 'screens/role_switcher_screen.dart';
 
 import 'package:provider/provider.dart';
 import 'providers/rbac_provider.dart';
+import 'providers/theme_provider.dart';
 import 'models/role_model.dart';
 // Removed analysis/chatbot/market imports because those files are missing
 // Restore or add them later if you want those routes back.
@@ -20,8 +21,11 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => RbacProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => RbacProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
       child: const FinanceApp(),
     ),
   );
@@ -32,10 +36,11 @@ class FinanceApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Indian Finance Manager',
-      theme: ThemeData(primarySwatch: Colors.green),
+      theme: theme.themeData,
       home: const LoginScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),

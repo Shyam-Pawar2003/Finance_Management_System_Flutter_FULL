@@ -1,394 +1,280 @@
 import 'package:flutter/material.dart';
 
-class UserDashboard  extends StatelessWidget {
-  const UserDashboard ({super.key});
+import 'user/data/dashboard_seed_data.dart';
+import 'user/models/dashboard_models.dart';
+import 'user/quickActions/Apply Leave.dart';
+import 'user/quickActions/Submit Report.dart';
+import 'user/quickActions/View Payslip.dart';
+import 'user/widgets/attendance_panel.dart';
+import 'user/widgets/dashboard_header.dart';
+import 'user/widgets/hero_overview_card.dart';
+import 'user/widgets/metrics_section.dart';
+import 'user/widgets/quick_actions_panel.dart';
+import 'user/widgets/salary_panel.dart';
+import 'user/widgets/schedule_panel.dart';
+import 'user/widgets/sidebar_navigation.dart';
+import 'user/widgets/task_panel.dart';
+
+class UserDashboard extends StatefulWidget {
+  const UserDashboard({super.key});
+
+  @override
+  State<UserDashboard> createState() => _UserDashboardState();
+}
+
+class _UserDashboardState extends State<UserDashboard> {
+  int _selectedMenuIndex = 0;
+  String _selectedRange = dashboardRanges[1];
+
+  int get _completedTasks {
+    return dashboardTasks.where((task) => task.status == 'Completed').length;
+  }
+
+  int get _pendingTasks {
+    return dashboardTasks.where((task) => task.status == 'Pending').length;
+  }
+
+  double get _completionRate {
+    if (dashboardTasks.isEmpty) {
+      return 0;
+    }
+    return _completedTasks / dashboardTasks.length;
+  }
+
+  String _currency(double amount) {
+    final isNegative = amount < 0;
+    final value = amount.abs().round().toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < value.length; i++) {
+      final reverseIndex = value.length - i;
+      buffer.write(value[i]);
+      if (reverseIndex > 1 && reverseIndex % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+    return '${isNegative ? '-' : ''}\$${buffer.toString()}';
+  }
+
+  List<DashboardMetric> get _metrics {
+    return [
+      DashboardMetric(
+        title: 'Assigned Tasks',
+        value: '${dashboardTasks.length}',
+        caption: 'Current task queue',
+        color: const Color(0xFF1A73E8),
+        icon: Icons.assignment_rounded,
+      ),
+      DashboardMetric(
+        title: 'Completed',
+        value: '$_completedTasks',
+        caption: 'Closed this cycle',
+        color: const Color(0xFF0F9D58),
+        icon: Icons.task_alt_rounded,
+      ),
+      DashboardMetric(
+        title: 'Pending',
+        value: '$_pendingTasks',
+        caption: 'Needs attention',
+        color: const Color(0xFFF29900),
+        icon: Icons.pending_actions_rounded,
+      ),
+      const DashboardMetric(
+        title: 'Leave Balance',
+        value: '8 Days',
+        caption: 'Available this quarter',
+        color: Color(0xFF0F355B),
+        icon: Icons.event_available_rounded,
+      ),
+    ];
+  }
+
+  void _openQuickAction(BuildContext context, QuickActionData action) {
+    Widget? destination;
+    switch (action.label) {
+      case 'Apply Leave':
+        destination = const ApplyLeavePage();
+        break;
+      case 'Submit Report':
+        destination = const SubmitReportPage();
+        break;
+      case 'View Payslip':
+        destination = const ViewPayslipPage();
+        break;
+      default:
+        destination = null;
+    }
+
+    if (destination == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${action.label} will be available soon.')),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => destination!),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: Row(
-        children: [
-          /// ================= SIDEBAR =================
-          Container(
-            width: 220,
-            padding: const EdgeInsets.all(20),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                SizedBox(height: 20),
-                Text("Donezo",
-                    style:
-                        TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                SizedBox(height: 40),
-                SidebarItem(icon: Icons.dashboard, title: "Dashboard"),
-                SidebarItem(icon: Icons.task, title: "Tasks"),
-                SidebarItem(icon: Icons.access_time, title: "Attendance"),
-                SidebarItem(icon: Icons.attach_money, title: "Salary"),
-                SidebarItem(icon: Icons.bar_chart, title: "Analytics"),
-                SidebarItem(icon: Icons.calendar_today, title: "Calendar"),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final isDesktop = width >= 1100;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF4F7FB),
+          drawer: isDesktop
+              ? null
+              : Drawer(
+                  child: SafeArea(
+                    child: SidebarNavigation(
+                      items: dashboardNavItems,
+                      selectedIndex: _selectedMenuIndex,
+                      compact: true,
+                      onSelect: (index) {
+                        setState(() {
+                          _selectedMenuIndex = index;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+          body: SafeArea(
+            child: Row(
+              children: [
+                if (isDesktop)
+                  Container(
+                    width: 248,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      border:
+                          Border(right: BorderSide(color: Color(0xFFE6ECF5))),
+                    ),
+                    child: SidebarNavigation(
+                      items: dashboardNavItems,
+                      selectedIndex: _selectedMenuIndex,
+                      compact: false,
+                      onSelect: (index) {
+                        setState(() {
+                          _selectedMenuIndex = index;
+                        });
+                      },
+                    ),
+                  ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      isDesktop ? 24 : 16,
+                      16,
+                      isDesktop ? 24 : 16,
+                      24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DashboardHeader(
+                          isDesktop: isDesktop,
+                          ranges: dashboardRanges,
+                          selectedRange: _selectedRange,
+                          onRangeChanged: (range) {
+                            setState(() {
+                              _selectedRange = range;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        HeroOverviewCard(
+                          completionRate: _completionRate,
+                          focusTasks: _pendingTasks,
+                          hoursToday: '8.2h',
+                        ),
+                        const SizedBox(height: 16),
+                        MetricsSection(metrics: _metrics, width: width),
+                        const SizedBox(height: 16),
+                        _buildMainPanels(width),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-
-          /// ================= MAIN CONTENT =================
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// HEADER
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Welcome, Shyam 👋",
-                        style: TextStyle(
-                            fontSize: 28, fontWeight: FontWeight.bold),
-                      ),
-                      Row(
-                        children: const [
-                          Icon(Icons.notifications_none, size: 28),
-                          SizedBox(width: 20),
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Colors.blue,
-                            child: Text("S"),
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-
-                  /// SUMMARY CARDS
-                  Row(
-                    children: const [
-                      SummaryCard(
-                          title: "Total Assigned Tasks", value: "15"),
-                      SizedBox(width: 20),
-                      SummaryCard(title: "Completed Tasks", value: "10"),
-                      SizedBox(width: 20),
-                      SummaryCard(title: "Pending Tasks", value: "5"),
-                      SizedBox(width: 20),
-                      SummaryCard(title: "Leave Balance", value: "8 Days"),
-                    ],
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  /// MAIN GRID
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      /// LEFT COLUMN
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          children: const [
-                            MyTasksCard(),
-                            SizedBox(height: 20),
-                            QuickActionsCard(),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 20),
-
-                      /// RIGHT COLUMN
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          children: const [
-                            AttendanceCard(),
-                            SizedBox(height: 20),
-                            SalaryCard(),
-                          ],
-                        ),
-                      )
-                    ],
-                  )
-                ],
-              ),
-            ),
-          )
-        ],
-      ),
+        );
+      },
     );
   }
-}
 
-//// ================= WIDGETS =================
-
-
-class SidebarItem extends StatefulWidget {
-  final IconData icon;
-  final String title;
-  final String? routeName;     // Optional navigation
-  final bool isSelected;       // Highlight active item
-  final VoidCallback? onTap;   // Optional custom action
-
-  const SidebarItem({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.routeName,
-    this.isSelected = false,
-    this.onTap,
-  });
-
-  @override
-  State<SidebarItem> createState() => _SidebarItemState();
-}
-
-class _SidebarItemState extends State<SidebarItem> {
-  bool _isHovering = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color activeColor = Colors.green;
-    final Color defaultColor = Colors.grey;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          if (widget.onTap != null) {
-            widget.onTap!();
-          } else if (widget.routeName != null &&
-              ModalRoute.of(context)?.settings.name != widget.routeName) {
-            Navigator.pushNamed(context, widget.routeName!);
-          }
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: widget.isSelected
-                ? activeColor.withOpacity(0.12)
-                : _isHovering
-                    ? Colors.grey.withOpacity(0.08)
-                    : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+  Widget _buildMainPanels(double width) {
+    final isNarrow = width < 1180;
+    if (isNarrow) {
+      return Column(
+        children: [
+          const TaskPanel(tasks: dashboardTasks),
+          const SizedBox(height: 14),
+          QuickActionsPanel(
+            actions: dashboardQuickActions,
+            onActionTap: (action) => _openQuickAction(context, action),
           ),
-          child: Row(
+          const SizedBox(height: 14),
+          const AttendancePanel(
+            days: dashboardAttendance,
+            checkIn: '09:01 AM',
+            checkOut: '06:04 PM',
+          ),
+          const SizedBox(height: 14),
+          SalaryPanel(
+            currency: _currency,
+            basic: 3500,
+            allowance: 700,
+            deductions: 400,
+          ),
+          const SizedBox(height: 14),
+          const SchedulePanel(events: dashboardEvents),
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 3,
+          child: Column(
             children: [
-              Icon(
-                widget.icon,
-                color: widget.isSelected ? activeColor : defaultColor,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                widget.title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight:
-                      widget.isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color:
-                      widget.isSelected ? activeColor : Colors.black87,
-                ),
+              const TaskPanel(tasks: dashboardTasks),
+              const SizedBox(height: 14),
+              QuickActionsPanel(
+                actions: dashboardQuickActions,
+                onActionTap: (action) => _openQuickAction(context, action),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-class SummaryCard extends StatelessWidget {
-  final String title;
-  final String value;
-
-  const SummaryCard({super.key, required this.title, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 2)
-          ],
+        const SizedBox(width: 14),
+        Expanded(
+          flex: 2,
+          child: Column(
+            children: [
+              const AttendancePanel(
+                days: dashboardAttendance,
+                checkIn: '09:01 AM',
+                checkOut: '06:04 PM',
+              ),
+              const SizedBox(height: 14),
+              SalaryPanel(
+                currency: _currency,
+                basic: 3500,
+                allowance: 700,
+                deductions: 400,
+              ),
+              const SizedBox(height: 14),
+              const SchedulePanel(events: dashboardEvents),
+            ],
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 10),
-            Text(value,
-                style:
-                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class MyTasksCard extends StatelessWidget {
-  const MyTasksCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return dashboardCard(
-      title: "My Tasks",
-      child: Column(
-        children: const [
-          TaskTile("Prepare Monthly Report", "Pending", Colors.orange),
-          TaskTile("Client Meeting", "In Progress", Colors.blue),
-          TaskTile("Submit Timesheet", "Completed", Colors.green),
-        ],
-      ),
-    );
-  }
-}
-
-class TaskTile extends StatelessWidget {
-  final String title;
-  final String status;
-  final Color color;
-
-  const TaskTile(this.title, this.status, this.color, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(title),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(status, style: TextStyle(color: color)),
-      ),
-    );
-  }
-}
-
-class AttendanceCard extends StatelessWidget {
-  const AttendanceCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return dashboardCard(
-      title: "Attendance",
-      child: Column(
-        children: const [
-          SizedBox(height: 10),
-          Text("94%",
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
-          SizedBox(height: 10),
-          Text("Check-In: 09:00 AM"),
-          Text("Check-Out: 06:00 PM"),
-        ],
-      ),
-    );
-  }
-}
-
-class SalaryCard extends StatelessWidget {
-  const SalaryCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return dashboardCard(
-      title: "Salary",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text("\$4500",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-          SizedBox(height: 10),
-          Text("Basic Pay: \$3500"),
-          Text("Allowances: \$500"),
-          Text("Deductions: \$500"),
-        ],
-      ),
-    );
-  }
-}
-
-class QuickActionsCard extends StatelessWidget {
-  const QuickActionsCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return dashboardCard(
-      title: "Quick Actions",
-      child: Wrap(
-        spacing: 20,
-        runSpacing: 20,
-        children: const [
-          ActionButton("Apply Leave", Icons.event),
-          ActionButton("Submit Report", Icons.upload_file),
-          ActionButton("View Payslip", Icons.receipt),
-          ActionButton("Update Profile", Icons.person),
-        ],
-      ),
-    );
-  }
-}
-
-class ActionButton extends StatelessWidget {
-  final String title;
-  final IconData icon;
-
-  const ActionButton(this.title, this.icon, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 150,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F0FE),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.blue),
-          const SizedBox(height: 8),
-          Text(title)
-        ],
-      ),
-    );
-  }
-}
-
-Widget dashboardCard({required String title, required Widget child}) {
-  return Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            spreadRadius: 2)
       ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title,
-            style: const TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 15),
-        child
-      ],
-    ),
-  );
+    );
+  }
 }
