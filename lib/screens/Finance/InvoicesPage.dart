@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'Pages/Invoice/export_statement_page.dart';
+import 'Pages/Invoice/reconcile_paid_page.dart';
+import 'Pages/Invoice/send_reminder_page.dart';
+
 class InvoicesPage extends StatefulWidget {
   const InvoicesPage({super.key});
 
@@ -196,6 +200,24 @@ class _InvoicesPageState extends State<InvoicesPage> {
       }
     }
     return '${isNegative ? '-' : ''}\$${buffer.toString()}';
+  }
+
+  void _openSendReminders() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SendReminderPage()),
+    );
+  }
+
+  void _openExportStatement() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ExportStatementPage()),
+    );
+  }
+
+  void _openReconcilePaid() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ReconcilePaidPage()),
+    );
   }
 
   @override
@@ -1008,12 +1030,23 @@ class _InvoicesPageState extends State<InvoicesPage> {
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 10),
-              _actionButton(Icons.mark_email_unread_rounded, 'Send reminders'),
-              const SizedBox(height: 8),
-              _actionButton(Icons.file_download_rounded, 'Export statement'),
+              _actionButton(
+                Icons.mark_email_unread_rounded,
+                'Send reminders',
+                onPressed: _openSendReminders,
+              ),
               const SizedBox(height: 8),
               _actionButton(
-                  Icons.assignment_turned_in_rounded, 'Reconcile paid'),
+                Icons.file_download_rounded,
+                'Export statement',
+                onPressed: _openExportStatement,
+              ),
+              const SizedBox(height: 8),
+              _actionButton(
+                Icons.assignment_turned_in_rounded,
+                'Reconcile paid',
+                onPressed: _openReconcilePaid,
+              ),
             ],
           ),
         ),
@@ -1021,11 +1054,15 @@ class _InvoicesPageState extends State<InvoicesPage> {
     );
   }
 
-  Widget _actionButton(IconData icon, String label) {
+  Widget _actionButton(
+    IconData icon,
+    String label, {
+    required VoidCallback onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: onPressed,
         icon: Icon(icon, size: 18, color: const Color(0xFF1A73E8)),
         label: Align(
           alignment: Alignment.centerLeft,

@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'Active_Projects.dart';
+import 'Assign_employee_to_project.dart';
+import 'Export_employee_report.dart';
+import 'Finance.dart';
+import 'HR.dart';
+import 'Legal.dart';
+import 'Leave_Management.dart';
+import 'Operations.dart';
+import 'Send_policy_reminder.dart';
+
 class SubAdminEmployeesPage extends StatefulWidget {
   const SubAdminEmployeesPage({super.key});
 
@@ -205,6 +215,78 @@ class _SubAdminEmployeesPageState extends State<SubAdminEmployeesPage> {
 
   int _totalProjects(List<_EmployeeRecord> list) {
     return list.fold<int>(0, (sum, employee) => sum + employee.projects);
+  }
+
+  void _openActiveProjectsPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminActiveProjectsPage(),
+      ),
+    );
+  }
+
+  void _openAssignEmployeeToProjectPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminAssignEmployeeToProjectPage(),
+      ),
+    );
+  }
+
+  void _openExportEmployeeReportPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminExportEmployeeReportPage(),
+      ),
+    );
+  }
+
+  void _openFinancePage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminFinancePage(),
+      ),
+    );
+  }
+
+  void _openHrPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminHRPage(),
+      ),
+    );
+  }
+
+  void _openLegalPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminLegalPage(),
+      ),
+    );
+  }
+
+  void _openOperationsPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminOperationsPage(),
+      ),
+    );
+  }
+
+  void _openSendPolicyReminderPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminSendPolicyReminderPage(),
+      ),
+    );
+  }
+
+  void _openLeaveManagementPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminLeaveManagementPage(),
+      ),
+    );
   }
 
   @override
@@ -416,6 +498,7 @@ class _SubAdminEmployeesPageState extends State<SubAdminEmployeesPage> {
         subtitle: 'Assigned work items',
         icon: Icons.work_outline_rounded,
         color: const Color(0xFF36B39C),
+        onTap: _openActiveProjectsPage,
       ),
       _EmployeeMetric(
         title: 'On Leave',
@@ -423,6 +506,7 @@ class _SubAdminEmployeesPageState extends State<SubAdminEmployeesPage> {
         subtitle: 'Currently unavailable',
         icon: Icons.event_busy_rounded,
         color: const Color(0xFFF29900),
+        onTap: _openLeaveManagementPage,
       ),
       _EmployeeMetric(
         title: 'Probation',
@@ -445,7 +529,7 @@ class _SubAdminEmployeesPageState extends State<SubAdminEmployeesPage> {
       ),
       itemBuilder: (context, index) {
         final metric = metrics[index];
-        return _panel(
+        final panel = _panel(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -492,6 +576,18 @@ class _SubAdminEmployeesPageState extends State<SubAdminEmployeesPage> {
                 ),
               ),
             ],
+          ),
+        );
+
+        if (metric.onTap == null) {
+          return panel;
+        }
+
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: metric.onTap,
+            child: panel,
           ),
         );
       },
@@ -795,31 +891,7 @@ class _SubAdminEmployeesPageState extends State<SubAdminEmployeesPage> {
                 )
               else
                 ...departmentCounts.map(
-                  (item) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.department,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        Text(
-                          '${item.count}',
-                          style: const TextStyle(
-                            color: Color(0xFF36B39C),
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildDepartmentTile,
                 ),
             ],
           ),
@@ -836,12 +908,28 @@ class _SubAdminEmployeesPageState extends State<SubAdminEmployeesPage> {
               ),
               const SizedBox(height: 10),
               _actionButton(
-                  Icons.assignment_ind_rounded, 'Assign employee to project'),
+                Icons.assignment_ind_rounded,
+                'Assign employee to project',
+                onPressed: _openAssignEmployeeToProjectPage,
+              ),
               const SizedBox(height: 8),
               _actionButton(
-                  Icons.notifications_active_rounded, 'Send policy reminder'),
+                Icons.notifications_active_rounded,
+                'Send policy reminder',
+                onPressed: _openSendPolicyReminderPage,
+              ),
               const SizedBox(height: 8),
-              _actionButton(Icons.download_rounded, 'Export employee report'),
+              _actionButton(
+                Icons.event_note_rounded,
+                'Leave management',
+                onPressed: _openLeaveManagementPage,
+              ),
+              const SizedBox(height: 8),
+              _actionButton(
+                Icons.download_rounded,
+                'Export employee report',
+                onPressed: _openExportEmployeeReportPage,
+              ),
             ],
           ),
         ),
@@ -862,11 +950,85 @@ class _SubAdminEmployeesPageState extends State<SubAdminEmployeesPage> {
     return rows;
   }
 
-  Widget _actionButton(IconData icon, String label) {
+  Widget _buildDepartmentTile(_DepartmentCount item) {
+    final VoidCallback? onTap;
+    switch (item.department) {
+      case 'Finance':
+        onTap = _openFinancePage;
+        break;
+      case 'HR':
+        onTap = _openHrPage;
+        break;
+      case 'Legal':
+        onTap = _openLegalPage;
+        break;
+      case 'Operations':
+        onTap = _openOperationsPage;
+        break;
+      default:
+        onTap = null;
+    }
+
+    final isInteractive = onTap != null;
+
+    final child = Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              item.department,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          if (isInteractive)
+            const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: Icon(
+                Icons.open_in_new_rounded,
+                size: 16,
+                color: Color(0xFF1A73E8),
+              ),
+            ),
+          Text(
+            '${item.count}',
+            style: const TextStyle(
+              color: Color(0xFF36B39C),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!isInteractive) {
+      return child;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: child,
+      ),
+    );
+  }
+
+  Widget _actionButton(
+    IconData icon,
+    String label, {
+    VoidCallback? onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: onPressed ?? () {},
         icon: Icon(icon, size: 18, color: const Color(0xFF1A73E8)),
         label: Align(
           alignment: Alignment.centerLeft,
@@ -1008,6 +1170,7 @@ class _EmployeeMetric {
     required this.subtitle,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   final String title;
@@ -1015,6 +1178,7 @@ class _EmployeeMetric {
   final String subtitle;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 }
 
 class _DepartmentCount {

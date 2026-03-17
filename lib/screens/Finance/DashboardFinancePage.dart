@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:finance_flutter_full/screens/Finance/Pages/Dashboard/Create_Invoice.dart';
+import 'package:finance_flutter_full/screens/Finance/Pages/Dashboard/Run_payrol.dart';
+import 'package:finance_flutter_full/screens/Finance/Pages/Dashboard/Tax_Estimate.dart';
+
 class DashboardFinancePage extends StatefulWidget {
   const DashboardFinancePage({super.key});
 
@@ -103,6 +107,83 @@ class _DashboardFinancePageState extends State<DashboardFinancePage> {
       amount: '\$3,100',
     ),
   ];
+
+  Future<void> _openCreateInvoice() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const CreateInvoiceDashboardPage(),
+      ),
+    );
+  }
+
+  Future<void> _openRunPayroll() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const RunPayrollDashboardPage(),
+      ),
+    );
+  }
+
+  Future<void> _openTaxEstimate() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const TaxEstimateDashboardPage(),
+      ),
+    );
+  }
+
+  Future<void> _openExportStatements() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Export Statements',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Choose statement type to generate export package.',
+                  style: TextStyle(color: Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(Icons.calendar_view_month_rounded),
+                  title: const Text('Monthly Statement'),
+                  onTap: () => Navigator.of(context).pop('Monthly'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.date_range_rounded),
+                  title: const Text('Quarterly Statement'),
+                  onTap: () => Navigator.of(context).pop('Quarterly'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.summarize_rounded),
+                  title: const Text('Annual Statement'),
+                  onTap: () => Navigator.of(context).pop('Annual'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || choice == null) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$choice statement export has started.'),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -646,24 +727,28 @@ class _DashboardFinancePageState extends State<DashboardFinancePage> {
             icon: Icons.add_card_rounded,
             label: 'Create Invoice',
             color: const Color(0xFF1A73E8),
+            onPressed: _openCreateInvoice,
           ),
           const SizedBox(height: 10),
           _actionButton(
             icon: Icons.account_balance_rounded,
             label: 'Run Payroll',
             color: const Color(0xFF123A68),
+            onPressed: _openRunPayroll,
           ),
           const SizedBox(height: 10),
           _actionButton(
             icon: Icons.file_download_done_rounded,
             label: 'Export Statements',
             color: const Color(0xFF0F9D58),
+            onPressed: _openExportStatements,
           ),
           const SizedBox(height: 10),
           _actionButton(
             icon: Icons.calculate_rounded,
             label: 'Tax Estimate',
             color: const Color(0xFFF29900),
+            onPressed: _openTaxEstimate,
           ),
         ],
       ),
@@ -749,11 +834,12 @@ class _DashboardFinancePageState extends State<DashboardFinancePage> {
     required IconData icon,
     required String label,
     required Color color,
+    required VoidCallback onPressed,
   }) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: onPressed,
         icon: Icon(icon, size: 18, color: color),
         label: Align(
           alignment: Alignment.centerLeft,

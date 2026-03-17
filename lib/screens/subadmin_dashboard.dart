@@ -3,6 +3,13 @@ import 'package:flutter/material.dart';
 import '../Dashboard/Admin/Inbox_Page.dart';
 import '../Dashboard/Admin/calendar_page.dart';
 import 'subadmin/Employees.dart';
+import 'subadmin/Dashboard/Open_Recruiting_Board.dart';
+import 'subadmin/Dashboard/Review_Approvals.dart';
+import 'subadmin/Performance.dart';
+import 'subadmin/Payroll.dart';
+import 'subadmin/Profile.dart';
+import 'subadmin/Recruitment.dart';
+import 'subadmin/Settings.dart';
 
 class SubAdminDashboard extends StatefulWidget {
   const SubAdminDashboard({super.key});
@@ -14,6 +21,26 @@ class SubAdminDashboard extends StatefulWidget {
 class _SubAdminDashboardState extends State<SubAdminDashboard> {
   int selectedIndex = 0;
 
+  void _openProfilePage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SubAdminProfilePage()),
+    );
+  }
+
+  void _openReviewApprovalsPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SubAdminReviewApprovalsPage()),
+    );
+  }
+
+  void _openRecruitingBoardPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const SubAdminOpenRecruitingBoardPage(),
+      ),
+    );
+  }
+
   final List<_SubAdminNavItem> _menuItems = const [
     _SubAdminNavItem('Dashboard', Icons.space_dashboard_rounded),
     _SubAdminNavItem('Inbox', Icons.mail_outline_rounded),
@@ -24,6 +51,7 @@ class _SubAdminDashboardState extends State<SubAdminDashboard> {
     _SubAdminNavItem('Payroll', Icons.account_balance_wallet_outlined),
     _SubAdminNavItem('Leave Management', Icons.event_note_outlined),
     _SubAdminNavItem('Recruitment', Icons.person_search_outlined),
+    _SubAdminNavItem('Settings', Icons.settings_outlined),
   ];
 
   final List<_DashboardMetric> _metrics = const [
@@ -314,45 +342,60 @@ class _SubAdminDashboardState extends State<SubAdminDashboard> {
                 ),
               ),
               const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
-                ),
-                child: const Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Color(0xFF6366F1),
-                      child: Icon(Icons.person_outline_rounded,
-                          color: Colors.white, size: 18),
+                  onTap: () {
+                    if (!isDesktop) {
+                      Navigator.of(context).pop();
+                    }
+                    _openProfilePage();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
                     ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Shyam Patel',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    child: const Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Color(0xFF6366F1),
+                          child: Icon(Icons.person_outline_rounded,
+                              color: Colors.white, size: 18),
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Shyam Patel',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 1),
+                              Text(
+                                'Sub Admin',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 1),
-                          Text(
-                            'Sub Admin',
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 11),
-                          ),
-                        ],
-                      ),
+                        ),
+                        Icon(Icons.arrow_forward_ios_rounded,
+                            color: Colors.white70, size: 14),
+                      ],
                     ),
-                    Icon(Icons.expand_more_rounded, color: Colors.white70),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -422,10 +465,20 @@ class _SubAdminDashboardState extends State<SubAdminDashboard> {
           ),
         ),
         const SizedBox(width: 10),
-        const CircleAvatar(
-          radius: 19,
-          backgroundColor: Color(0xFF1D4ED8),
-          child: Icon(Icons.person_rounded, color: Colors.white),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _openProfilePage,
+            borderRadius: BorderRadius.circular(999),
+            child: const Padding(
+              padding: EdgeInsets.all(2),
+              child: CircleAvatar(
+                radius: 19,
+                backgroundColor: Color(0xFF1D4ED8),
+                child: Icon(Icons.person_rounded, color: Colors.white),
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -460,32 +513,10 @@ class _SubAdminDashboardState extends State<SubAdminDashboard> {
         );
 
       case 5:
-        return _buildPlaceholderPage(
-          title: 'Performance Hub',
-          description:
-              'Align goals with outcomes through scorecards, coaching notes, and review cycles.',
-          icon: Icons.insights_outlined,
-          accent: const Color(0xFF7C3AED),
-          highlights: const [
-            'Department scorecards',
-            'Top performer signals',
-            'Review calibration tools',
-          ],
-        );
+        return const SubAdminPerformancePage();
 
       case 6:
-        return _buildPlaceholderPage(
-          title: 'Payroll Command',
-          description:
-              'Prepare salary cycles, validate deductions, and monitor payout accuracy for every unit.',
-          icon: Icons.account_balance_wallet_outlined,
-          accent: const Color(0xFF2563EB),
-          highlights: const [
-            'Cycle readiness meter',
-            'Exception validation queue',
-            'Bank file release checklist',
-          ],
-        );
+        return const SubAdminPayrollPage();
 
       case 7:
         return _buildPlaceholderPage(
@@ -502,18 +533,10 @@ class _SubAdminDashboardState extends State<SubAdminDashboard> {
         );
 
       case 8:
-        return _buildPlaceholderPage(
-          title: 'Recruitment Pipeline',
-          description:
-              'Move candidates smoothly from sourcing to offer with funnel metrics and role priorities.',
-          icon: Icons.person_search_outlined,
-          accent: const Color(0xFF0891B2),
-          highlights: const [
-            'Stage conversion funnel',
-            'Interview panel calendar',
-            'Offer turnaround tracker',
-          ],
-        );
+        return const SubAdminRecruitmentPage();
+
+      case 9:
+        return const SubAdminSettingsPage();
 
       default:
         return _buildDashboardContent();
@@ -575,12 +598,14 @@ class _SubAdminDashboardState extends State<SubAdminDashboard> {
                           icon: Icons.rule_folder_outlined,
                           foreground: const Color(0xFF0F172A),
                           background: Colors.white,
+                          onTap: _openReviewApprovalsPage,
                         ),
                         _heroButton(
                           label: 'Open Recruiting Board',
                           icon: Icons.grid_view_rounded,
                           foreground: Colors.white,
                           background: Colors.white.withOpacity(0.16),
+                          onTap: _openRecruitingBoardPage,
                         ),
                       ],
                     ),
@@ -626,8 +651,9 @@ class _SubAdminDashboardState extends State<SubAdminDashboard> {
     required IconData icon,
     required Color foreground,
     required Color background,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    final content = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: background,
@@ -647,6 +673,19 @@ class _SubAdminDashboardState extends State<SubAdminDashboard> {
             ),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: content,
       ),
     );
   }

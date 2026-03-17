@@ -25,6 +25,7 @@ class GmailService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
       'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/gmail.send',
     ],
     clientId: _gmailWebClientId.isEmpty ? null : _gmailWebClientId,
     serverClientId: _gmailServerClientId.isEmpty ? null : _gmailServerClientId,
@@ -261,6 +262,58 @@ class GmailService {
       return labels.labels?.map((label) => label.name ?? '').toList() ?? [];
     } catch (e) {
       throw Exception('Unable to fetch Gmail labels. $e');
+    }
+  }
+
+  /// Send an email using Gmail API.
+  Future<void> sendEmail({
+    required String to,
+    required String subject,
+    required String body,
+    String? cc,
+    String? bcc,
+  }) async {
+    await _ensureApiReady();
+
+    if (to.trim().isEmpty) {
+      throw Exception('Recipient email is required.');
+    }
+
+    final user = currentUser;
+    final senderEmail = user?.email ?? 'me';
+    final senderName = (user?.displayName ?? '').trim();
+    final fromHeader =
+        senderName.isEmpty ? senderEmail : '"$senderName" <$senderEmail>';
+
+    final messageLines = <String>[
+      'From: $fromHeader',
+      'To: ${to.trim()}',
+      if (cc != null && cc.trim().isNotEmpty) 'Cc: ${cc.trim()}',
+      if (bcc != null && bcc.trim().isNotEmpty) 'Bcc: ${bcc.trim()}',
+      'Subject: ${subject.trim()}',
+      'MIME-Version: 1.0',
+      'Content-Type: text/plain; charset="utf-8"',
+      'Content-Transfer-Encoding: 8bit',
+      '',
+      body,
+    ];
+
+    final rawMessage = messageLines.join('\r\n');
+    final encodedMessage =
+        base64Url.encode(utf8.encode(rawMessage)).replaceAll('=', '');
+
+    final gmailMessage = gmail.Message()..raw = encodedMessage;
+
+    try {
+      await _gmailApi!.users.messages.send(gmailMessage, 'me');
+    } catch (error) {
+      final lower = error.toString().toLowerCase();
+      if (lower.contains('insufficient') || lower.contains('permission')) {
+        throw Exception(
+          'Gmail send permission is missing. Sign out, then sign in again to grant send access.',
+        );
+      }
+      throw Exception('Unable to send Gmail message. $error');
     }
   }
 }

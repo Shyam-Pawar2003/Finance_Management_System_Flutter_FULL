@@ -16,6 +16,12 @@ class DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void showInfo(String text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+      );
+    }
+
     final greeting = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: const [
@@ -41,7 +47,7 @@ class DashboardHeader extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         IconButton(
-          onPressed: () {},
+          onPressed: () => showInfo('No new notifications right now.'),
           icon: const Icon(Icons.notifications_none_rounded),
           tooltip: 'Notifications',
         ),
@@ -76,7 +82,7 @@ class DashboardHeader extends StatelessWidget {
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () => showInfo('No new notifications right now.'),
                 icon: const Icon(Icons.notifications_none_rounded),
               ),
               const CircleAvatar(

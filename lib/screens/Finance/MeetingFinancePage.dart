@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class MeetingFinancePage extends StatefulWidget {
   const MeetingFinancePage({super.key});
@@ -28,7 +29,7 @@ class _MeetingFinancePageState extends State<MeetingFinancePage> {
     'Planning',
   ];
 
-  final List<_FinanceMeeting> _meetings = const [
+  final List<_FinanceMeeting> _meetings = [
     _FinanceMeeting(
       id: 'MTG-001',
       title: 'Budget Review Meeting',
@@ -153,6 +154,53 @@ class _MeetingFinancePageState extends State<MeetingFinancePage> {
           _selectedFilter == 'All' || meeting.status == _selectedFilter;
       return matchesQuery && matchesType && matchesFilter;
     }).toList();
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  String _statusForDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final onlyDate = DateTime(date.year, date.month, date.day);
+
+    if (onlyDate.isAtSameMomentAs(today)) {
+      return 'Today';
+    }
+    if (onlyDate.isBefore(today)) {
+      return 'Completed';
+    }
+    return 'Upcoming';
+  }
+
+  String _formatMeetingDate(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  String _formatMeetingTime(TimeOfDay time) {
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final suffix = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$hour:$minute $suffix';
+  }
+
+  void _updateMeeting(
+      String meetingId, _FinanceMeeting Function(_FinanceMeeting) updater) {
+    final index = _meetings.indexWhere((meeting) => meeting.id == meetingId);
+    if (index == -1) {
+      return;
+    }
+
+    setState(() {
+      _meetings[index] = updater(_meetings[index]);
+    });
   }
 
   @override
@@ -302,6 +350,38 @@ class _MeetingFinancePageState extends State<MeetingFinancePage> {
               _heroChip('Today', '$today'),
               _heroChip('Upcoming', '$upcoming'),
               _heroChip('Avg Attendees', '5.9'),
+              InkWell(
+                onTap: _showLogoDetails,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Finance Ops Logo',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -699,6 +779,30 @@ class _MeetingFinancePageState extends State<MeetingFinancePage> {
             ),
             const SizedBox(height: 8),
             chips,
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => _showMeetingDetails(meeting),
+                  icon: const Icon(Icons.visibility_outlined, size: 16),
+                  label: const Text('Details'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: () => _toggleMeetingCompletion(meeting),
+                  icon: Icon(
+                    meeting.status == 'Completed'
+                        ? Icons.restart_alt_rounded
+                        : Icons.task_alt_rounded,
+                    size: 16,
+                  ),
+                  label: Text(
+                    meeting.status == 'Completed' ? 'Reopen' : 'Mark Done',
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       );
@@ -732,7 +836,36 @@ class _MeetingFinancePageState extends State<MeetingFinancePage> {
           const SizedBox(width: 10),
           Expanded(child: details),
           const SizedBox(width: 10),
-          chips,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              chips,
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () => _showMeetingDetails(meeting),
+                    icon: const Icon(Icons.visibility_outlined, size: 16),
+                    label: const Text('Details'),
+                  ),
+                  FilledButton.tonalIcon(
+                    onPressed: () => _toggleMeetingCompletion(meeting),
+                    icon: Icon(
+                      meeting.status == 'Completed'
+                          ? Icons.restart_alt_rounded
+                          : Icons.task_alt_rounded,
+                      size: 16,
+                    ),
+                    label: Text(
+                      meeting.status == 'Completed' ? 'Reopen' : 'Mark Done',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -807,11 +940,23 @@ class _MeetingFinancePageState extends State<MeetingFinancePage> {
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 10),
-              _actionButton(Icons.add_rounded, 'Create agenda'),
+              _actionButton(
+                Icons.add_rounded,
+                'Create agenda',
+                onPressed: _showCreateAgendaDialog,
+              ),
               const SizedBox(height: 8),
-              _actionButton(Icons.groups_rounded, 'Invite attendees'),
+              _actionButton(
+                Icons.groups_rounded,
+                'Invite attendees',
+                onPressed: _showInviteAttendeesDialog,
+              ),
               const SizedBox(height: 8),
-              _actionButton(Icons.summarize_rounded, 'Export minutes'),
+              _actionButton(
+                Icons.summarize_rounded,
+                'Export minutes',
+                onPressed: _exportMeetingMinutes,
+              ),
             ],
           ),
         ),
@@ -819,11 +964,11 @@ class _MeetingFinancePageState extends State<MeetingFinancePage> {
     );
   }
 
-  Widget _actionButton(IconData icon, String label) {
+  Widget _actionButton(IconData icon, String label, {VoidCallback? onPressed}) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: onPressed,
         icon: Icon(icon, size: 18, color: const Color(0xFF1A73E8)),
         label: Align(
           alignment: Alignment.centerLeft,
@@ -890,41 +1035,501 @@ class _MeetingFinancePageState extends State<MeetingFinancePage> {
     }
   }
 
-  void _showCreateMeetingDialog() {
-    final titleController = TextEditingController();
+  void _showLogoDetails() {
     showDialog<void>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Schedule Meeting'),
-          content: TextField(
-            controller: titleController,
-            decoration: const InputDecoration(
-              labelText: 'Meeting title',
-              border: OutlineInputBorder(),
+          title: const Text('Finance Ops Logo'),
+          content: const Text(
+            'Finance Meeting Hub branding is active. This module is connected to meeting scheduling, agenda management, and minutes export flows.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showMeetingDetails(_FinanceMeeting meeting) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(meeting.title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('ID: ${meeting.id}'),
+              const SizedBox(height: 6),
+              Text('Owner: ${meeting.owner}'),
+              const SizedBox(height: 6),
+              Text('Type: ${meeting.type}'),
+              const SizedBox(height: 6),
+              Text('Status: ${meeting.status}'),
+              const SizedBox(height: 6),
+              Text('Schedule: ${meeting.date} | ${meeting.time}'),
+              const SizedBox(height: 6),
+              Text('Room: ${meeting.room}'),
+              const SizedBox(height: 6),
+              Text('Attendees: ${meeting.attendees}'),
+              const SizedBox(height: 10),
+              Text('Agenda: ${meeting.agenda}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+            FilledButton.tonal(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _toggleMeetingCompletion(meeting);
+              },
+              child: Text(
+                meeting.status == 'Completed'
+                    ? 'Reopen Meeting'
+                    : 'Mark Completed',
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _toggleMeetingCompletion(_FinanceMeeting meeting) {
+    if (meeting.status == 'Completed') {
+      final parsedDate = DateTime.tryParse(meeting.date);
+      final fallbackStatus = parsedDate == null
+          ? 'Upcoming'
+          : (() {
+              final status = _statusForDate(parsedDate);
+              return status == 'Completed' ? 'Upcoming' : status;
+            })();
+
+      _updateMeeting(
+        meeting.id,
+        (item) => item.copyWith(status: fallbackStatus),
+      );
+      _showMessage('${meeting.id} reopened.');
+      return;
+    }
+
+    _updateMeeting(
+      meeting.id,
+      (item) => item.copyWith(status: 'Completed'),
+    );
+    _showMessage('${meeting.id} marked as completed.');
+  }
+
+  Future<void> _showCreateAgendaDialog() async {
+    if (_meetings.isEmpty) {
+      _showMessage('No meetings available to update agenda.');
+      return;
+    }
+
+    String selectedMeetingId = _meetings.first.id;
+    final agendaController = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Create Agenda'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedMeetingId,
+                    isExpanded: true,
+                    items: _meetings
+                        .map(
+                          (meeting) => DropdownMenuItem(
+                            value: meeting.id,
+                            child: Text('${meeting.id} - ${meeting.title}'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() {
+                          selectedMeetingId = value;
+                        });
+                      }
+                    },
+                    decoration: const InputDecoration(labelText: 'Meeting'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: agendaController,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Agenda',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final agenda = agendaController.text.trim();
+                    if (agenda.isEmpty) {
+                      _showMessage('Please enter agenda details.');
+                      return;
+                    }
+
+                    _updateMeeting(
+                      selectedMeetingId,
+                      (meeting) => meeting.copyWith(agenda: agenda),
+                    );
+                    Navigator.of(dialogContext).pop();
+                    _showMessage('Agenda updated for $selectedMeetingId.');
+                  },
+                  child: const Text('Save Agenda'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showInviteAttendeesDialog() async {
+    if (_meetings.isEmpty) {
+      _showMessage('No meetings available for invitations.');
+      return;
+    }
+
+    String selectedMeetingId = _meetings.first.id;
+    final inviteController = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Invite Attendees'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedMeetingId,
+                    isExpanded: true,
+                    items: _meetings
+                        .map(
+                          (meeting) => DropdownMenuItem(
+                            value: meeting.id,
+                            child: Text('${meeting.id} - ${meeting.title}'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() {
+                          selectedMeetingId = value;
+                        });
+                      }
+                    },
+                    decoration: const InputDecoration(labelText: 'Meeting'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: inviteController,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Emails (comma separated)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final raw = inviteController.text.trim();
+                    final emails = raw
+                        .split(RegExp(r'[,;\s]+'))
+                        .map((item) => item.trim())
+                        .where((item) => item.isNotEmpty && item.contains('@'))
+                        .toSet()
+                        .toList();
+
+                    if (emails.isEmpty) {
+                      _showMessage('Enter at least one valid email.');
+                      return;
+                    }
+
+                    _updateMeeting(
+                      selectedMeetingId,
+                      (meeting) => meeting.copyWith(
+                        attendees: meeting.attendees + emails.length,
+                      ),
+                    );
+                    Navigator.of(dialogContext).pop();
+                    _showMessage(
+                      '${emails.length} attendee invite(s) sent for $selectedMeetingId.',
+                    );
+                  },
+                  child: const Text('Send Invites'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _exportMeetingMinutes() async {
+    final completed =
+        _meetings.where((meeting) => meeting.status == 'Completed').toList();
+    final source = completed.isEmpty ? _meetings.take(3).toList() : completed;
+
+    if (source.isEmpty) {
+      _showMessage('No meetings available to export minutes.');
+      return;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('Finance Meeting Minutes Export');
+    buffer.writeln('Generated: ${DateTime.now().toIso8601String()}');
+    buffer.writeln();
+
+    for (final meeting in source) {
+      buffer.writeln('${meeting.id} - ${meeting.title}');
+      buffer.writeln('Date: ${meeting.date} | Time: ${meeting.time}');
+      buffer.writeln('Owner: ${meeting.owner} | Type: ${meeting.type}');
+      buffer.writeln('Agenda: ${meeting.agenda}');
+      buffer.writeln('Attendees: ${meeting.attendees}');
+      buffer.writeln('Status: ${meeting.status}');
+      buffer.writeln('---');
+    }
+
+    final exportText = buffer.toString();
+    await Clipboard.setData(ClipboardData(text: exportText));
+
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Minutes Exported'),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: SelectableText(exportText),
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      titleController.text.trim().isEmpty
-                          ? 'Meeting scheduling placeholder triggered.'
-                          : 'Meeting "${titleController.text.trim()}" captured.',
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Create'),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
             ),
           ],
+        );
+      },
+    );
+
+    _showMessage('Meeting minutes copied to clipboard.');
+  }
+
+  void _showCreateMeetingDialog() {
+    final titleController = TextEditingController();
+    final ownerController = TextEditingController();
+    final roomController = TextEditingController(text: 'Conference A');
+    final agendaController = TextEditingController();
+
+    String selectedType = 'Internal';
+    DateTime selectedDate = DateTime.now();
+    TimeOfDay selectedTime = TimeOfDay.now();
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Schedule Meeting'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Meeting title',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: ownerController,
+                      decoration: const InputDecoration(
+                        labelText: 'Owner / Team',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: roomController,
+                      decoration: const InputDecoration(
+                        labelText: 'Room / Link',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: const InputDecoration(
+                        labelText: 'Type',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _types
+                          .where((type) => type != 'All')
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setDialogState(() {
+                            selectedType = value;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: dialogContext,
+                                initialDate: selectedDate,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2035),
+                              );
+                              if (picked != null) {
+                                setDialogState(() {
+                                  selectedDate = picked;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.calendar_month_rounded,
+                                size: 16),
+                            label: Text(_formatMeetingDate(selectedDate)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: dialogContext,
+                                initialTime: selectedTime,
+                              );
+                              if (picked != null) {
+                                setDialogState(() {
+                                  selectedTime = picked;
+                                });
+                              }
+                            },
+                            icon:
+                                const Icon(Icons.access_time_rounded, size: 16),
+                            label: Text(_formatMeetingTime(selectedTime)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: agendaController,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Agenda',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final title = titleController.text.trim();
+                    final owner = ownerController.text.trim();
+                    final room = roomController.text.trim();
+                    final agenda = agendaController.text.trim();
+
+                    if (title.isEmpty ||
+                        owner.isEmpty ||
+                        room.isEmpty ||
+                        agenda.isEmpty) {
+                      _showMessage('Please fill all meeting details.');
+                      return;
+                    }
+
+                    final nextId =
+                        'MTG-${(_meetings.length + 1).toString().padLeft(3, '0')}';
+                    final status = _statusForDate(selectedDate);
+
+                    setState(() {
+                      _meetings.insert(
+                        0,
+                        _FinanceMeeting(
+                          id: nextId,
+                          title: title,
+                          date: _formatMeetingDate(selectedDate),
+                          time: _formatMeetingTime(selectedTime),
+                          room: room,
+                          owner: owner,
+                          type: selectedType,
+                          status: status,
+                          attendees: 1,
+                          agenda: agenda,
+                        ),
+                      );
+                    });
+
+                    Navigator.of(dialogContext).pop();
+                    _showMessage('Meeting "$title" scheduled as $nextId.');
+                  },
+                  child: const Text('Create'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -975,6 +1580,31 @@ class _FinanceMeeting {
   final String status;
   final int attendees;
   final String agenda;
+
+  _FinanceMeeting copyWith({
+    String? title,
+    String? date,
+    String? time,
+    String? room,
+    String? owner,
+    String? type,
+    String? status,
+    int? attendees,
+    String? agenda,
+  }) {
+    return _FinanceMeeting(
+      id: id,
+      title: title ?? this.title,
+      date: date ?? this.date,
+      time: time ?? this.time,
+      room: room ?? this.room,
+      owner: owner ?? this.owner,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      attendees: attendees ?? this.attendees,
+      agenda: agenda ?? this.agenda,
+    );
+  }
 }
 
 class _MeetingMetric {

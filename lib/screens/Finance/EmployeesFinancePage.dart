@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'Pages/Employees/Approve_reimbursements.dart';
+import 'Pages/Employees/Avg_Monthly_Salary.dart';
+import 'Pages/Employees/Export_Payroll_sheet.dart';
+import 'Pages/Employees/Payroll_total.dart';
+import 'Pages/Employees/Total_Employees.dart';
+import 'Pages/Employees/Total_Reimbursements.dart';
+
 class EmployeesFinancePage extends StatefulWidget {
   const EmployeesFinancePage({super.key});
 
@@ -122,6 +129,36 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
 
   int _countByStatus(List<_FinanceEmployee> employees, String status) {
     return employees.where((e) => e.status == status).length;
+  }
+
+  void _openPage(Widget page) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => page),
+    );
+  }
+
+  void _openTotalEmployeesPage() {
+    _openPage(const TotalEmployeesPage());
+  }
+
+  void _openAvgMonthlySalaryPage() {
+    _openPage(const AvgMonthlySalaryPage());
+  }
+
+  void _openTotalReimbursementsPage() {
+    _openPage(const TotalReimbursementsPage());
+  }
+
+  void _openPayrollTotalPage() {
+    _openPage(const PayrollTotalPage());
+  }
+
+  void _openExportPayrollSheetPage() {
+    _openPage(const ExportPayrollSheetPage());
+  }
+
+  void _openApproveReimbursementsPage() {
+    _openPage(const ApproveReimbursementsPage());
   }
 
   @override
@@ -326,6 +363,7 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
         subtitle: 'Current filtered list',
         color: const Color(0xFF1A73E8),
         icon: Icons.groups_2_rounded,
+        onTap: _openTotalEmployeesPage,
       ),
       _KpiCardData(
         title: 'Avg Monthly Salary',
@@ -333,6 +371,7 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
         subtitle: 'Per employee average',
         color: const Color(0xFF0F9D58),
         icon: Icons.payments_rounded,
+        onTap: _openAvgMonthlySalaryPage,
       ),
       _KpiCardData(
         title: 'Total Reimbursements',
@@ -340,6 +379,7 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
         subtitle: 'Pending claims',
         color: const Color(0xFFF29900),
         icon: Icons.receipt_long_rounded,
+        onTap: _openTotalReimbursementsPage,
       ),
       _KpiCardData(
         title: 'Payroll Total',
@@ -347,6 +387,7 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
         subtitle: 'Monthly payroll base',
         color: const Color(0xFF123A68),
         icon: Icons.account_balance_wallet_rounded,
+        onTap: _openPayrollTotalPage,
       ),
     ];
 
@@ -368,7 +409,7 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
       ),
       itemBuilder: (context, index) {
         final card = cards[index];
-        return _panel(
+        final panel = _panel(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -415,6 +456,19 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
                 ),
               ),
             ],
+          ),
+        );
+
+        if (card.onTap == null) {
+          return panel;
+        }
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: card.onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: panel,
           ),
         );
       },
@@ -858,12 +912,14 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
                 icon: Icons.file_download_done_rounded,
                 label: 'Export payroll sheet',
                 color: const Color(0xFF1A73E8),
+                onPressed: _openExportPayrollSheetPage,
               ),
               const SizedBox(height: 8),
               _quickAction(
                 icon: Icons.approval_rounded,
                 label: 'Approve reimbursements',
                 color: const Color(0xFF0F9D58),
+                onPressed: _openApproveReimbursementsPage,
               ),
             ],
           ),
@@ -876,11 +932,12 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
     required IconData icon,
     required String label,
     required Color color,
+    required VoidCallback onPressed,
   }) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: onPressed,
         icon: Icon(icon, size: 18, color: color),
         label: Align(
           alignment: Alignment.centerLeft,
@@ -986,6 +1043,7 @@ class _KpiCardData {
     required this.subtitle,
     required this.color,
     required this.icon,
+    this.onTap,
   });
 
   final String title;
@@ -993,4 +1051,5 @@ class _KpiCardData {
   final String subtitle;
   final Color color;
   final IconData icon;
+  final VoidCallback? onTap;
 }

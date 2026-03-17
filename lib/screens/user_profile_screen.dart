@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'user/data/dashboard_seed_data.dart';
+import 'user/models/dashboard_models.dart';
+
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
 
@@ -8,280 +11,338 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
-  bool _isEditing = false;
-  final TextEditingController _nameController =
-      TextEditingController(text: 'John Doe');
-  final TextEditingController _emailController =
-      TextEditingController(text: 'john.doe@example.com');
-  final TextEditingController _phoneController =
-      TextEditingController(text: '+1-234-567-8900');
-  final TextEditingController _locationController =
-      TextEditingController(text: 'New York, USA');
+  late UserFinanceProfile _profile;
+
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+
+  @override
+  void initState() {
+    super.initState();
+    _profile = seededUserProfile;
+    _nameController = TextEditingController(text: _profile.name);
+    _emailController = TextEditingController(text: _profile.email);
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
-    _locationController.dispose();
     super.dispose();
+  }
+
+  String get _currencySymbol {
+    switch (_profile.currencyPreference) {
+      case 'EUR':
+        return 'EUR ';
+      case 'GBP':
+        return 'GBP ';
+      case 'INR':
+        return 'INR ';
+      case 'AED':
+        return 'AED ';
+      case 'USD':
+      default:
+        return r'$';
+    }
+  }
+
+  String _money(double value) {
+    final rounded = value.abs().toStringAsFixed(0);
+    final buffer = StringBuffer();
+    for (int i = 0; i < rounded.length; i++) {
+      final reverseIndex = rounded.length - i;
+      buffer.write(rounded[i]);
+      if (reverseIndex > 1 && reverseIndex % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+    return '${value < 0 ? '-' : ''}$_currencySymbol${buffer.toString()}';
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _saveProfile() {
+    setState(() {
+      _profile = _profile.copyWith(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+      );
+    });
+    _showMessage('Profile details saved successfully.');
+  }
+
+  Future<void> _changePassword() async {
+    final oldController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Change Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: oldController,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: 'Current password'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: newController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'New password'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: confirmController,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: 'Confirm password'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (oldController.text.isEmpty ||
+                    newController.text.length < 8) {
+                  _showMessage(
+                      'Enter current password and at least 8 chars for new password.');
+                  return;
+                }
+                if (newController.text != confirmController.text) {
+                  _showMessage('Password confirmation does not match.');
+                  return;
+                }
+                Navigator.of(context).pop();
+                _showMessage('Password updated successfully.');
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final totalIncome =
+        seedIncomeRecords.fold<double>(0, (sum, item) => sum + item.amount);
+    final totalExpense =
+        seedExpenseRecords.fold<double>(0, (sum, item) => sum + item.amount);
+
     return Scaffold(
-      backgroundColor: Colors.green.shade50,
+      backgroundColor: const Color(0xFFF2F6FB),
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.white,
         title: const Text(
           'User Profile',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
-        centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(_isEditing ? Icons.check : Icons.edit),
-            onPressed: () {
-              setState(() {
-                _isEditing = !_isEditing;
-              });
-              if (!_isEditing) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Profile updated successfully')),
-                );
-              }
-            },
+            tooltip: 'Save profile',
+            onPressed: _saveProfile,
+            icon: const Icon(Icons.save_outlined),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Avatar
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.green.shade100,
-                    child: Icon(
-                      Icons.person,
-                      size: 60,
-                      color: Colors.green,
-                    ),
-                  ),
-                  if (_isEditing)
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.green,
-                        radius: 20,
-                        child: IconButton(
-                          icon: const Icon(Icons.camera_alt,
-                              color: Colors.white, size: 18),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Camera feature coming soon')),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Profile Information
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      _buildProfileField(
-                        label: 'Full Name',
-                        controller: _nameController,
-                        icon: Icons.person,
-                        isEditing: _isEditing,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildProfileField(
-                        label: 'Email',
-                        controller: _emailController,
-                        icon: Icons.email,
-                        isEditing: _isEditing,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildProfileField(
-                        label: 'Phone',
-                        controller: _phoneController,
-                        icon: Icons.phone,
-                        isEditing: _isEditing,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildProfileField(
-                        label: 'Location',
-                        controller: _locationController,
-                        icon: Icons.location_on,
-                        isEditing: _isEditing,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Account Statistics
-              const Text(
-                'Account Statistics',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatTile(
-                      title: 'Total Transactions',
-                      value: '245',
-                      icon: Icons.receipt,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatTile(
-                      title: 'Account Created',
-                      value: '1 Year',
-                      icon: Icons.calendar_today,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatTile(
-                      title: 'Total Saved',
-                      value: '\$5,250',
-                      icon: Icons.savings,
-                      color: Colors.purple,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatTile(
-                      title: 'Spending Avg',
-                      value: '\$1,250',
-                      icon: Icons.trending_down,
-                      color: Colors.orange,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Settings Section
-              const Text(
-                'Settings',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              _buildSettingTile(
-                title: 'Notification Settings',
-                icon: Icons.notifications,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Notification settings coming soon')),
-                  );
-                },
-              ),
-
-              _buildSettingTile(
-                title: 'Security',
-                icon: Icons.security,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Security settings coming soon')),
-                  );
-                },
-              ),
-
-              _buildSettingTile(
-                title: 'Change Password',
-                icon: Icons.lock,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Change password feature coming soon')),
-                  );
-                },
-              ),
-
-              _buildSettingTile(
-                title: 'Help & Support',
-                icon: Icons.help,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Help section coming soon')),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              // Logout Button
-              SizedBox(
+              Container(
                 width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    _showLogoutDialog(context);
-                  },
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Logout'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF0F355B),
+                      Color(0xFF1A73E8),
+                      Color(0xFF2FA98F)
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Color(0xFFEEF4FF),
+                      child: Icon(Icons.person_outline_rounded,
+                          color: Color(0xFF1A73E8), size: 30),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _profile.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _profile.email,
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              _panel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Basic Details',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Name',
+                        prefixIcon: Icon(Icons.person_outline_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.alternate_email_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: _profile.currencyPreference,
+                      items: supportedCurrencies
+                          .map((item) =>
+                              DropdownMenuItem(value: item, child: Text(item)))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _profile =
+                              _profile.copyWith(currencyPreference: value);
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Currency Preference',
+                        prefixIcon: Icon(Icons.currency_exchange_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _saveProfile,
+                        icon: const Icon(Icons.save_outlined),
+                        label: const Text('Save Basic Details'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _panel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Security',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Two-factor Authentication (2FA)'),
+                      value: _profile.twoFactorEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _profile = _profile.copyWith(twoFactorEnabled: value);
+                        });
+                      },
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Biometric Login'),
+                      value: _profile.biometricEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _profile = _profile.copyWith(biometricEnabled: value);
+                        });
+                      },
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Automatic Bank API Import (Optional)'),
+                      value: _profile.bankImportEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _profile =
+                              _profile.copyWith(bankImportEnabled: value);
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _changePassword,
+                      icon: const Icon(Icons.lock_reset_rounded),
+                      label: const Text('Change Password'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _panel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Finance Snapshot',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 10),
+                    _statRow('Income Tracked', _money(totalIncome)),
+                    _statRow('Expense Tracked', _money(totalExpense)),
+                    _statRow('Net Balance', _money(totalIncome - totalExpense)),
+                    _statRow('Savings Goals',
+                        '${seedSavingsGoals.length} active goals'),
+                    _statRow('Portfolio Holdings',
+                        '${seedInvestmentHoldings.length} assets'),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -289,165 +350,46 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  Widget _buildProfileField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    required bool isEditing,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (isEditing)
-          TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: Colors.green),
-              border: const OutlineInputBorder(),
-            ),
-          )
-        else
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: Colors.green, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    controller.text,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildStatTile({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingTile({
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  Widget _panel({required Widget child}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: Row(
-              children: [
-                Icon(icon, color: Colors.green, size: 24),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                const Icon(Icons.arrow_forward_ios,
-                    size: 16, color: Colors.grey),
-              ],
-            ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE3EBF4)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
-        ),
+        ],
       ),
+      child: child,
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/login',
-                  (route) => false,
-                );
-              },
-              child: const Text(
-                'Logout',
-                style: TextStyle(color: Colors.red),
+  Widget _statRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
-        );
-      },
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
     );
   }
 }

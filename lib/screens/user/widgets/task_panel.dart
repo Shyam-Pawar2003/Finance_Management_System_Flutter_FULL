@@ -27,7 +27,15 @@ class TaskPanel extends StatelessWidget {
                 ),
               ),
               TextButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content:
+                          Text('Task creation flow will be available soon.'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.add_task_rounded, size: 18),
                 label: const Text('Add'),
               ),

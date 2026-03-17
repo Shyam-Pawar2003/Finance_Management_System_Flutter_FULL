@@ -23,7 +23,10 @@ class JobPosting {
 }
 
 class RecruitmentPage extends StatefulWidget {
-  const RecruitmentPage({Key? key}) : super(key: key);
+  final List<JobPosting> seededJobs;
+
+  const RecruitmentPage({Key? key, this.seededJobs = const []})
+      : super(key: key);
 
   @override
   State<RecruitmentPage> createState() => _RecruitmentPageState();
@@ -79,6 +82,26 @@ class _RecruitmentPageState extends State<RecruitmentPage> {
   @override
   void initState() {
     super.initState();
+
+    // Insert seeded jobs first so cross-page flows can surface newly created roles.
+    if (widget.seededJobs.isNotEmpty) {
+      for (final seeded in widget.seededJobs.reversed) {
+        _jobs.insert(
+          0,
+          JobPosting(
+            title: seeded.title,
+            department: seeded.department,
+            description: seeded.description,
+            status: seeded.status,
+            priority: seeded.priority,
+            openings: seeded.openings,
+            applicants: seeded.applicants,
+            postedOn: seeded.postedOn,
+          ),
+        );
+      }
+    }
+
     _searchController.addListener(() => setState(() {}));
   }
 

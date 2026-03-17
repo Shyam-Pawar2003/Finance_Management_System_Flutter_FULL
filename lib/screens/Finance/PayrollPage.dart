@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'Pages/Payroll/Approve_pending_payouts.dart';
+import 'Pages/Payroll/Bonuses.dart';
+import 'Pages/Payroll/EmployeeinCycle.dart';
+import 'Pages/Payroll/Export_salary_statements.dart';
+import 'Pages/Payroll/Total_Deductions.dart';
+import 'Pages/Payroll/Total_Overtime.dart';
+
 class PayrollPage extends StatefulWidget {
   const PayrollPage({super.key});
 
@@ -228,6 +235,54 @@ class _PayrollPageState extends State<PayrollPage> {
       }
     }
     return '${isNegative ? '-' : ''}\$${buffer.toString()}';
+  }
+
+  void _openApprovePendingPayouts() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ApprovePendingPayoutsPage(),
+      ),
+    );
+  }
+
+  void _openBonusesPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const BonusesPage(),
+      ),
+    );
+  }
+
+  void _openEmployeeInCyclePage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const EmployeeInCyclePage(),
+      ),
+    );
+  }
+
+  void _openTotalDeductionsPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const TotalDeductionsPage(),
+      ),
+    );
+  }
+
+  void _openTotalOvertimePage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const TotalOvertimePage(),
+      ),
+    );
+  }
+
+  void _openExportSalaryStatements() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ExportSalaryStatementsPage(),
+      ),
+    );
   }
 
   @override
@@ -468,6 +523,7 @@ class _PayrollPageState extends State<PayrollPage> {
         subtitle: 'Current filtered set',
         icon: Icons.groups_2_rounded,
         color: const Color(0xFF1A73E8),
+        onTap: _openEmployeeInCyclePage,
       ),
       _PayrollKpiData(
         title: 'Total Overtime',
@@ -475,6 +531,7 @@ class _PayrollPageState extends State<PayrollPage> {
         subtitle: 'Extra-hours payout',
         icon: Icons.schedule_rounded,
         color: const Color(0xFF0F9D58),
+        onTap: _openTotalOvertimePage,
       ),
       _PayrollKpiData(
         title: 'Total Deductions',
@@ -482,6 +539,7 @@ class _PayrollPageState extends State<PayrollPage> {
         subtitle: 'Tax, PF and adjustments',
         icon: Icons.remove_circle_outline_rounded,
         color: const Color(0xFFDB4437),
+        onTap: _openTotalDeductionsPage,
       ),
       _PayrollKpiData(
         title: 'Bonuses',
@@ -510,7 +568,7 @@ class _PayrollPageState extends State<PayrollPage> {
       ),
       itemBuilder: (context, index) {
         final card = cards[index];
-        return _panel(
+        final kpiWidget = _panel(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -557,6 +615,14 @@ class _PayrollPageState extends State<PayrollPage> {
                 ),
               ),
             ],
+          ),
+        );
+        if (card.onTap == null) return kpiWidget;
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: card.onTap,
+            child: kpiWidget,
           ),
         );
       },
@@ -1167,15 +1233,31 @@ class _PayrollPageState extends State<PayrollPage> {
               ),
               const SizedBox(height: 8),
               _quickAction(
+                icon: Icons.groups_2_rounded,
+                label: 'View employees in cycle',
+                color: const Color(0xFF2563EB),
+                onPressed: _openEmployeeInCyclePage,
+              ),
+              const SizedBox(height: 8),
+              _quickAction(
                 icon: Icons.file_download_done_rounded,
                 label: 'Export salary statements',
                 color: const Color(0xFF1A73E8),
+                onPressed: _openExportSalaryStatements,
+              ),
+              const SizedBox(height: 8),
+              _quickAction(
+                icon: Icons.workspace_premium_rounded,
+                label: 'Review bonuses',
+                color: const Color(0xFFF29900),
+                onPressed: _openBonusesPage,
               ),
               const SizedBox(height: 8),
               _quickAction(
                 icon: Icons.fact_check_rounded,
                 label: 'Approve pending payouts',
                 color: const Color(0xFF0F9D58),
+                onPressed: _openApprovePendingPayouts,
               ),
             ],
           ),
@@ -1188,11 +1270,12 @@ class _PayrollPageState extends State<PayrollPage> {
     required IconData icon,
     required String label,
     required Color color,
+    required VoidCallback onPressed,
   }) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: onPressed,
         icon: Icon(icon, size: 18, color: color),
         label: Align(
           alignment: Alignment.centerLeft,
@@ -1304,6 +1387,7 @@ class _PayrollKpiData {
     required this.subtitle,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   final String title;
@@ -1311,6 +1395,7 @@ class _PayrollKpiData {
   final String subtitle;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 }
 
 class _PayrollTrend {
