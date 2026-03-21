@@ -8,6 +8,12 @@ import '../data/dashboard_seed_data.dart';
 import '../models/dashboard_models.dart';
 import 'Investments.dart/Goals.dart';
 import 'Investments.dart/History.dart';
+import 'Investments.dart/Home/QR.dart';
+import 'Investments.dart/Home/Rebalance.dart';
+import 'Investments.dart/Home/Request.dart';
+import 'Investments.dart/Home/Send.dart';
+import 'Investments.dart/Home/Setting.dart';
+import 'Investments.dart/Home/Withdraw.dart';
 import 'Investments.dart/Mutal_fund.dart';
 
 class UserInvestmentsPage extends StatefulWidget {
@@ -93,6 +99,54 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
   void _showMessage(String text) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  void _openQrGenerator() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const InvestmentQrPage(),
+      ),
+    );
+  }
+
+  void _openSend() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const InvestmentSendPage(),
+      ),
+    );
+  }
+
+  void _openRequest() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const InvestmentRequestPage(),
+      ),
+    );
+  }
+
+  void _openRebalance() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const InvestmentRebalancePage(),
+      ),
+    );
+  }
+
+  void _openWithdraw() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const InvestmentWithdrawPage(),
+      ),
+    );
+  }
+
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const InvestmentSettingsPage(),
+      ),
     );
   }
 
@@ -552,15 +606,21 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
             ],
           ),
         ),
-        _iconBubble(Icons.qr_code_scanner_rounded),
+        _iconBubble(
+          Icons.qr_code_scanner_rounded,
+          onTap: _openQrGenerator,
+        ),
         const SizedBox(width: 8),
-        _iconBubble(Icons.settings_outlined),
+        _iconBubble(
+          Icons.settings_outlined,
+          onTap: _openSettings,
+        ),
       ],
     );
   }
 
-  Widget _iconBubble(IconData icon) {
-    return Container(
+  Widget _iconBubble(IconData icon, {VoidCallback? onTap}) {
+    final bubble = Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
@@ -569,6 +629,16 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
         border: Border.all(color: _lime.withOpacity(0.18)),
       ),
       child: Icon(icon, size: 18, color: _textPrimary),
+    );
+
+    if (onTap == null) {
+      return bubble;
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: bubble,
     );
   }
 
@@ -660,17 +730,37 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _actionButton(Icons.north_east_rounded, 'Send')),
-              const SizedBox(width: 8),
               Expanded(
-                  child: _actionButton(Icons.call_received_rounded, 'Request')),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _actionButton(Icons.auto_graph_rounded, 'Rebalance'),
+                child: _actionButton(
+                  Icons.north_east_rounded,
+                  'Send',
+                  onTap: _openSend,
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                  child: _actionButton(Icons.payments_outlined, 'Withdraw')),
+                child: _actionButton(
+                  Icons.call_received_rounded,
+                  'Request',
+                  onTap: _openRequest,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _actionButton(
+                  Icons.auto_graph_rounded,
+                  'Rebalance',
+                  onTap: _openRebalance,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _actionButton(
+                  Icons.payments_outlined,
+                  'Withdraw',
+                  onTap: _openWithdraw,
+                ),
+              ),
             ],
           ),
         ],
@@ -678,9 +768,13 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
     );
   }
 
-  Widget _actionButton(IconData icon, String label) {
+  Widget _actionButton(
+    IconData icon,
+    String label, {
+    required VoidCallback onTap,
+  }) {
     return InkWell(
-      onTap: () => _showMessage('$label tools will be available soon.'),
+      onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
