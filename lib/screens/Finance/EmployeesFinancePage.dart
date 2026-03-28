@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'Pages/Employees/Approve_reimbursements.dart';
+import 'Pages/Employees/Add_Emloyee.dart';
 import 'Pages/Employees/Avg_Monthly_Salary.dart';
 import 'Pages/Employees/Export_Payroll_sheet.dart';
 import 'Pages/Employees/Payroll_total.dart';
@@ -161,6 +162,10 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
     _openPage(const ApproveReimbursementsPage());
   }
 
+  void _openAddEmployeePage() {
+    _openPage(const AddEmployeePage());
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -225,7 +230,7 @@ class _EmployeesFinancePageState extends State<EmployeesFinancePage> {
     );
 
     final addButton = ElevatedButton.icon(
-      onPressed: () {},
+      onPressed: _openAddEmployeePage,
       icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
       label: const Text('Add Employee'),
       style: ElevatedButton.styleFrom(

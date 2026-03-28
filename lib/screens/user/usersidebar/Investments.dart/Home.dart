@@ -1,8 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../../data/dashboard_seed_data.dart';
 import '../../models/dashboard_models.dart';
-import 'Home/QR.dart';
 import 'Home/Rebalance.dart';
 import 'Home/Request.dart';
 import 'Home/Send.dart';
@@ -100,8 +102,14 @@ class UserInvestmentsHomeContent extends StatefulWidget {
 
 class _UserInvestmentsHomeContentState extends State<UserInvestmentsHomeContent>
     with SingleTickerProviderStateMixin {
+  static const String _growwBackendBaseUrl = 'http://localhost:3001';
+  static const String _growwSessionId = '';
+
   late TabController _tabController;
   int _selectedFilter = 0;
+  bool _isLoadingGrowwHoldings = false;
+  String? _growwHoldingsNotice;
+  List<InvestmentHolding> _growwHoldings = const [];
 
   static const Color _cardDark = Color(0xFF0D1F09);
   static const Color _cardDeep = Color(0xFF081606);
@@ -132,6 +140,7 @@ class _UserInvestmentsHomeContentState extends State<UserInvestmentsHomeContent>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _fetchGrowwHoldings();
   }
 
   @override
@@ -216,6 +225,43 @@ class _UserInvestmentsHomeContentState extends State<UserInvestmentsHomeContent>
     }).toList();
   }
 
+  List<_GrowthPoint> get _growthTrendPoints {
+    final source = _growwHoldings.isNotEmpty ? _growwHoldings : _sortedHoldings;
+    final points = source.take(8).toList();
+    if (points.isEmpty) {
+      return const [];
+    }
+
+    return points
+        .map(
+          (item) => _GrowthPoint(
+            label: _shortLabel(item.assetName),
+            value: item.returnPercent,
+          ),
+        )
+        .toList();
+  }
+
+  String _shortLabel(String name) {
+    final clean = name.trim();
+    if (clean.isEmpty) {
+      return '-';
+    }
+    if (clean.length <= 8) {
+      return clean.toUpperCase();
+    }
+    return clean.substring(0, 8).toUpperCase();
+  }
+
+  double get _avgGrowthPercent {
+    final points = _growthTrendPoints;
+    if (points.isEmpty) {
+      return 0;
+    }
+    final total = points.fold<double>(0, (sum, p) => sum + p.value);
+    return total / points.length;
+  }
+
   String get _riskLabel {
     int low = 0;
     int medium = 0;
@@ -273,9 +319,98 @@ class _UserInvestmentsHomeContentState extends State<UserInvestmentsHomeContent>
     );
   }
 
+  double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  Future<void> _fetchGrowwHoldings() async {
+    if (_growwSessionId.trim().isEmpty) {
+      setState(() {
+        _growwHoldingsNotice =
+            'Groww API connected in code. Add session id in Home.dart to load live holdings.';
+        _growwHoldings = const [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingGrowwHoldings = true;
+      _growwHoldingsNotice = null;
+    });
+
+    try {
+      final uri = Uri.parse('$_growwBackendBaseUrl/api/portfolio/holdings');
+      final response = await http.get(
+        uri,
+        headers: {'x-session-id': _growwSessionId},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Holdings API failed (${response.statusCode})');
+      }
+
+      final body = jsonDecode(response.body);
+      if (body is! Map<String, dynamic>) {
+        throw Exception('Invalid holdings response');
+      }
+
+      final payload = body['payload'];
+      if (payload is! List) {
+        throw Exception('No holdings payload found');
+      }
+
+      final holdings = payload.whereType<Map<String, dynamic>>().map((item) {
+        final quantity = _toDouble(item['quantity']);
+        final averagePrice = _toDouble(item['average_price']);
+        final currentPrice = _toDouble(item['current_price'] ?? item['ltp']);
+        final invested =
+            (averagePrice * quantity).clamp(0, double.infinity).toDouble();
+        final current =
+            (currentPrice * quantity).clamp(0, double.infinity).toDouble();
+
+        return InvestmentHolding(
+          assetName: (item['trading_symbol'] ?? item['company_name'] ?? 'N/A')
+              .toString(),
+          assetType: (item['segment'] ?? 'Equity').toString(),
+          investedAmount: invested,
+          currentValue: current,
+          riskLevel: 'Medium',
+        );
+      }).toList();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _growwHoldings = holdings;
+        _isLoadingGrowwHoldings = false;
+        _growwHoldingsNotice = holdings.isEmpty
+            ? 'Groww API returned no holdings for this session.'
+            : 'Live holdings loaded from Groww backend.';
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _growwHoldings = const [];
+        _isLoadingGrowwHoldings = false;
+        _growwHoldingsNotice =
+            'Could not reach Groww backend. Showing local demo holdings.';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final topHoldings = _sortedHoldings.take(4).toList();
+    final topHoldings =
+        (_growwHoldings.isNotEmpty ? _growwHoldings : _sortedHoldings)
+            .take(4)
+            .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,6 +454,43 @@ class _UserInvestmentsHomeContentState extends State<UserInvestmentsHomeContent>
             ),
           ],
         ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            if (_isLoadingGrowwHoldings)
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(
+                _growwHoldings.isNotEmpty ? Icons.cloud_done : Icons.storage,
+                color: _growwHoldings.isNotEmpty ? _lime : _textMuted,
+                size: 14,
+              ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                _growwHoldingsNotice ?? 'Holdings data source ready.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: _fetchGrowwHoldings,
+              child: const Text(
+                'Refresh',
+                style: TextStyle(fontSize: 11),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 12),
         SizedBox(
           height: 220,
@@ -332,6 +504,8 @@ class _UserInvestmentsHomeContentState extends State<UserInvestmentsHomeContent>
             ),
           ),
         ),
+        const SizedBox(height: 22),
+        _buildGrowthTrendSection(),
         const SizedBox(height: 24),
         const Text(
           'Collections',
@@ -625,6 +799,121 @@ class _UserInvestmentsHomeContentState extends State<UserInvestmentsHomeContent>
                 fontSize: 11,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrowthTrendSection() {
+    final points = _growthTrendPoints;
+    final isLive = _growwHoldings.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _lime.withOpacity(0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Growth Trend',
+                  style: TextStyle(
+                    color: _textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 19,
+                  ),
+                ),
+              ),
+              Text(
+                '${_avgGrowthPercent >= 0 ? '+' : ''}${_avgGrowthPercent.toStringAsFixed(2)}%',
+                style: TextStyle(
+                  color: _returnColor(_avgGrowthPercent),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isLive
+                ? 'Live trend from Groww holdings returns'
+                : 'Local trend fallback from demo holdings',
+            style: const TextStyle(
+              color: _textMuted,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 130,
+            child: points.length < 2
+                ? const Center(
+                    child: Text(
+                      'Not enough data to draw trend',
+                      style: TextStyle(
+                        color: _textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                : CustomPaint(
+                    painter: _GrowthTrendChartPainter(
+                      points: points,
+                      lineColor: _lime,
+                      fillTopColor: _lime.withOpacity(0.22),
+                      fillBottomColor: _lime.withOpacity(0.03),
+                      gridColor: _textMuted.withOpacity(0.15),
+                    ),
+                    child: const SizedBox.expand(),
+                  ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  points.isNotEmpty ? points.first.label : '-',
+                  style: const TextStyle(
+                    color: _textMuted,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              if (points.length > 2)
+                Expanded(
+                  child: Text(
+                    points[points.length ~/ 2].label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: _textMuted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: Text(
+                  points.isNotEmpty ? points.last.label : '-',
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    color: _textMuted,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1045,4 +1334,104 @@ class _InvestmentCollection {
 
   final String name;
   final IconData icon;
+}
+
+class _GrowthPoint {
+  const _GrowthPoint({required this.label, required this.value});
+
+  final String label;
+  final double value;
+}
+
+class _GrowthTrendChartPainter extends CustomPainter {
+  _GrowthTrendChartPainter({
+    required this.points,
+    required this.lineColor,
+    required this.fillTopColor,
+    required this.fillBottomColor,
+    required this.gridColor,
+  });
+
+  final List<_GrowthPoint> points;
+  final Color lineColor;
+  final Color fillTopColor;
+  final Color fillBottomColor;
+  final Color gridColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) {
+      return;
+    }
+
+    const horizontalPadding = 8.0;
+    const verticalPadding = 12.0;
+    final chartWidth = size.width - (horizontalPadding * 2);
+    final chartHeight = size.height - (verticalPadding * 2);
+
+    final values = points.map((p) => p.value).toList();
+    final minValue = values.reduce((a, b) => a < b ? a : b);
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final diff =
+        (maxValue - minValue).abs() < 0.001 ? 1.0 : (maxValue - minValue);
+
+    Offset pointOffset(int index) {
+      final x =
+          horizontalPadding + (chartWidth * (index / (points.length - 1)));
+      final normalized = (points[index].value - minValue) / diff;
+      final y = verticalPadding + ((1 - normalized) * chartHeight);
+      return Offset(x, y);
+    }
+
+    final gridPaint = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1;
+    for (int i = 0; i < 4; i++) {
+      final y = verticalPadding + ((chartHeight / 3) * i);
+      canvas.drawLine(
+        Offset(horizontalPadding, y),
+        Offset(size.width - horizontalPadding, y),
+        gridPaint,
+      );
+    }
+
+    final linePath = Path()..moveTo(pointOffset(0).dx, pointOffset(0).dy);
+    for (int i = 1; i < points.length; i++) {
+      final p = pointOffset(i);
+      linePath.lineTo(p.dx, p.dy);
+    }
+
+    final areaPath = Path.from(linePath)
+      ..lineTo(pointOffset(points.length - 1).dx, size.height - verticalPadding)
+      ..lineTo(pointOffset(0).dx, size.height - verticalPadding)
+      ..close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [fillTopColor, fillBottomColor],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawPath(areaPath, fillPaint);
+
+    final linePaint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 2.4
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(linePath, linePaint);
+
+    final dotPaint = Paint()..color = lineColor;
+    for (int i = 0; i < points.length; i++) {
+      canvas.drawCircle(pointOffset(i), 2.8, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GrowthTrendChartPainter oldDelegate) {
+    return oldDelegate.points != points ||
+        oldDelegate.lineColor != lineColor ||
+        oldDelegate.fillTopColor != fillTopColor ||
+        oldDelegate.fillBottomColor != fillBottomColor ||
+        oldDelegate.gridColor != gridColor;
+  }
 }

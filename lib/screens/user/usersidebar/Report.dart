@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../user_dashboard.dart';
+
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
 
@@ -37,6 +39,15 @@ class _ReportsPageState extends State<ReportsPage> {
         '$_selectedPeriod ${_reportTypes[_selectedReportTab]} report exported.');
   }
 
+  Future<void> _handleBack() async {
+    final popped = await Navigator.maybePop(context);
+    if (!popped && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const UserDashboard()),
+      );
+    }
+  }
+
   String _averageLabel() {
     final periodPrefix = _selectedPeriod == 'Weekly'
         ? 'Weekly'
@@ -70,7 +81,7 @@ class _ReportsPageState extends State<ReportsPage> {
         ),
         centerTitle: false,
         leading: IconButton(
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: _handleBack,
           icon: const Icon(Icons.arrow_back_rounded, color: _textPrimary),
         ),
         actions: [
@@ -101,6 +112,8 @@ class _ReportsPageState extends State<ReportsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildTipCard(),
+                  const SizedBox(height: 16),
                   // Period Selection
                   _buildPeriodSelector(),
                   const SizedBox(height: 24),
@@ -137,6 +150,35 @@ class _ReportsPageState extends State<ReportsPage> {
           color: _lime.withOpacity(0.09),
         ),
       );
+
+  Widget _buildTipCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _lime.withOpacity(0.12)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.insights_outlined, color: _lime, size: 18),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Tip: switch period and tab to compare trends before exporting your final report.',
+              style: TextStyle(
+                color: _textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildPeriodSelector() {
     return SingleChildScrollView(
@@ -449,7 +491,7 @@ class _ReportsPageState extends State<ReportsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Breakdown by Category',
+            'Category Breakdown',
             style: TextStyle(
               color: _textPrimary,
               fontSize: 16,

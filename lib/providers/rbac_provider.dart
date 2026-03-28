@@ -8,6 +8,7 @@ class RbacProvider extends ChangeNotifier {
     Role(name: RoleNames.hrManager),
     Role(name: RoleNames.financeManager),
     Role(name: RoleNames.companyAuthority),
+    Role(name: RoleNames.normalUser),
   ];
 
   final List<RoleAssignment> _assignments = [];
@@ -21,10 +22,14 @@ class RbacProvider extends ChangeNotifier {
 
   void _seedDemoUsers() {
     if (_assignments.isNotEmpty) return;
-    _assignments.add(RoleAssignment(userId: 'user_admin', roleName: RoleNames.subAdmin));
-    _assignments.add(RoleAssignment(userId: 'user_hr', roleName: RoleNames.hrManager));
-    _assignments.add(RoleAssignment(userId: 'user_finance', roleName: RoleNames.financeManager));
-    _assignments.add(RoleAssignment(userId: 'user_company', roleName: RoleNames.companyAuthority));
+    _assignments.add(
+        RoleAssignment(userId: 'user_admin', roleName: RoleNames.subAdmin));
+    _assignments
+        .add(RoleAssignment(userId: 'user_hr', roleName: RoleNames.hrManager));
+    _assignments.add(RoleAssignment(
+        userId: 'user_finance', roleName: RoleNames.financeManager));
+    _assignments.add(RoleAssignment(
+        userId: 'user_company', roleName: RoleNames.companyAuthority));
   }
 
   List<Role> get roles => List.unmodifiable(_roles);
@@ -32,6 +37,7 @@ class RbacProvider extends ChangeNotifier {
   String? get currentUserId => _currentUserId;
 
   void setCurrentUser(String userId) {
+    if (_currentUserId == userId) return;
     _currentUserId = userId;
     notifyListeners();
   }

@@ -685,6 +685,48 @@ class _UserDashboardState extends State<UserDashboard> {
     _showMessage('Profile settings saved.');
   }
 
+  String _friendlySectionTitle(String label) {
+    switch (label) {
+      case 'Income':
+        return 'Income Tracker';
+      case 'Expense':
+        return 'Expense Tracker';
+      case 'Budgeting':
+        return 'Budget Planner';
+      case 'Savings':
+        return 'Savings Goals';
+      default:
+        return label;
+    }
+  }
+
+  String _sectionHint(String label) {
+    switch (label) {
+      case 'Overview':
+        return 'See your money snapshot and quick actions.';
+      case 'Profile':
+        return 'Update personal details and account preferences.';
+      case 'Income':
+        return 'Track salary, side income, and incoming cashflow.';
+      case 'Expense':
+        return 'Monitor spending patterns and recurring expenses.';
+      case 'Budgeting':
+        return 'Set limits and stay ahead of overspending alerts.';
+      case 'Savings':
+        return 'Create and track goals for upcoming plans.';
+      case 'Investments':
+        return 'Review portfolio performance and risk profile.';
+      case 'Reports':
+        return 'Analyze trends using month-over-month data.';
+      case 'Transactions':
+        return 'Browse recent entries with smart filters.';
+      case 'Calendar':
+        return 'Track due dates and upcoming bill payments.';
+      default:
+        return 'Manage your finances with simple guided actions.';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -696,6 +738,7 @@ class _UserDashboardState extends State<UserDashboard> {
             _selectedSection == 8 ||
             _selectedSection == 9;
         final sectionLabel = userDashboardSections[_selectedSection].label;
+        final friendlySectionLabel = _friendlySectionTitle(sectionLabel);
 
         return Scaffold(
           backgroundColor: const Color(0xFFF2F6FB),
@@ -710,7 +753,7 @@ class _UserDashboardState extends State<UserDashboard> {
                           icon: const Icon(Icons.arrow_back_rounded),
                         )
                       : null,
-                  title: Text(sectionLabel),
+                  title: Text(friendlySectionLabel),
                   actions: [
                     IconButton(
                       onPressed: () => setState(() => _selectedSection = 1),
@@ -751,14 +794,29 @@ class _UserDashboardState extends State<UserDashboard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (hideSidebar)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: OutlinedButton.icon(
-                              onPressed: () =>
-                                  setState(() => _selectedSection = 0),
-                              icon: const Icon(Icons.arrow_back_rounded),
-                              label: const Text('Back to Dashboard Sections'),
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: OutlinedButton.icon(
+                                  onPressed: () =>
+                                      setState(() => _selectedSection = 0),
+                                  icon: const Icon(Icons.arrow_back_rounded),
+                                  label: const Text('Back to Main Dashboard'),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  _sectionHint(sectionLabel),
+                                  style: const TextStyle(
+                                    color: Color(0xFF64748B),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         _buildTopBanner(),
                         const SizedBox(height: 16),
@@ -905,7 +963,7 @@ class _UserDashboardState extends State<UserDashboard> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            item.label,
+                            _friendlySectionTitle(item.label),
                             style: TextStyle(
                               color: selected
                                   ? const Color(0xFF1A73E8)
@@ -968,7 +1026,7 @@ class _UserDashboardState extends State<UserDashboard> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Track income, spending, budgets, goals, and investments in one place.',
+                'Your money hub: track, plan, save, and invest in one place.',
                 style: TextStyle(color: Colors.white70),
               ),
             ],

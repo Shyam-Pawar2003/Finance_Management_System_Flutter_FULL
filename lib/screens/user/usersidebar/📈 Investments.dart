@@ -2,6 +2,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
+import '../../user_dashboard.dart';
 import 'package:http/http.dart' as http;
 
 import '../data/dashboard_seed_data.dart';
@@ -29,8 +31,6 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
 
   static const List<String> _rangeOptions = ['1M', '3M', '6M', '1Y', '3Y'];
 
-  // Replace with your API key from https://indianapi.in
-  static const String _apiKey = 'YOUR_API_KEY_HERE';
   String _stockName = 'Nifty 50';
   List<_GrowthPoint>? _apiPoints;
   bool _isLoadingChart = false;
@@ -212,14 +212,14 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
     return 'High Risk';
   }
 
-  String _rangeToPeriod(String range) {
+  String _rangeToYahooRange(String range) {
     switch (range) {
       case '1M':
-        return '1m';
+        return '1mo';
       case '3M':
-        return '1m';
+        return '3mo';
       case '6M':
-        return '6m';
+        return '6mo';
       case '3Y':
         return '3yr';
       case '1Y':
@@ -228,40 +228,89 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
     }
   }
 
+  String _rangeToInterval(String range) {
+    switch (range) {
+      case '1M':
+      case '3M':
+      case '6M':
+        return '1d';
+      case '1Y':
+        return '1wk';
+      case '3Y':
+      default:
+        return '1mo';
+    }
+  }
+
+  String _symbolFromInput(String input) {
+    final query = input.trim().toLowerCase();
+    const known = <String, String>{
+      'nifty 50': '^NSEI',
+      'nifty': '^NSEI',
+      'sensex': '^BSESN',
+      'bank nifty': '^NSEBANK',
+      'reliance': 'RELIANCE.NS',
+      'tcs': 'TCS.NS',
+      'infosys': 'INFY.NS',
+      'hdfc bank': 'HDFCBANK.NS',
+      'itc': 'ITC.NS',
+      'sbin': 'SBIN.NS',
+      'icici bank': 'ICICIBANK.NS',
+      'bajaj finance': 'BAJFINANCE.NS',
+    };
+
+    if (known.containsKey(query)) {
+      return known[query]!;
+    }
+
+    final cleaned =
+        input.trim().toUpperCase().replaceAll(RegExp(r'[^A-Z0-9^.]'), '');
+    if (cleaned.isEmpty) {
+      return '^NSEI';
+    }
+    if (cleaned.startsWith('^') ||
+        cleaned.endsWith('.NS') ||
+        cleaned.endsWith('.BO')) {
+      return cleaned;
+    }
+    return '$cleaned.NS';
+  }
+
   Future<void> _fetchHistoricalData() async {
     setState(() {
       _isLoadingChart = true;
       _apiError = null;
     });
     try {
+      final symbol = _symbolFromInput(_stockName);
       final uri = Uri.parse(
-        'https://stock.indianapi.in/historical_data'
-        '?stock_name=${Uri.encodeQueryComponent(_stockName)}'
-        '&period=${_rangeToPeriod(_selectedRange)}'
-        '&filter=price',
+        'https://query1.finance.yahoo.com/v8/finance/chart/'
+        '${Uri.encodeComponent(symbol)}'
+        '?range=${_rangeToYahooRange(_selectedRange)}'
+        '&interval=${_rangeToInterval(_selectedRange)}',
       );
-      final response = await http.get(
-        uri,
-        headers: {'x-api-key': _apiKey},
-      );
+      final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final points = _parseHistoricalData(data);
         setState(() {
           _apiPoints = points;
           _isLoadingChart = false;
+          _apiError = points.length < 2
+              ? 'Live data is limited for $symbol. Showing local trend.'
+              : null;
         });
       } else {
         setState(() {
           _apiError =
-              'API error ${response.statusCode}: ${response.reasonPhrase}';
+              'Live API unavailable (${response.statusCode}). Showing local trend.';
           _apiPoints = null;
           _isLoadingChart = false;
         });
       }
     } catch (_) {
       setState(() {
-        _apiError = 'Network error — showing local data.';
+        _apiError = 'Network error — showing local trend.';
         _apiPoints = null;
         _isLoadingChart = false;
       });
@@ -270,66 +319,47 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
 
   List<_GrowthPoint> _parseHistoricalData(dynamic data) {
     try {
-      // Format A: { "datasets":[{"metric":"Close","data":[[ts,val],...]}], "timeLabels":[...] }
-      if (data is Map && data['datasets'] is List) {
-        final datasets = data['datasets'] as List;
-        final rawLabels = data['timeLabels'];
-        final timeLabels = rawLabels is List
-            ? rawLabels.map((e) => e.toString()).toList()
-            : <String>[];
-        Map<String, dynamic>? closeSet;
-        for (final ds in datasets) {
-          if (ds is Map) {
-            final metric =
-                (ds['metric'] ?? ds['label'] ?? '').toString().toLowerCase();
-            if (metric.contains('close') || metric.contains('price')) {
-              closeSet = Map<String, dynamic>.from(ds);
-              break;
+      if (data is Map<String, dynamic>) {
+        final chart = data['chart'];
+        if (chart is Map<String, dynamic>) {
+          final result = chart['result'];
+          if (result is List && result.isNotEmpty && result.first is Map) {
+            final first = result.first as Map<String, dynamic>;
+            final timestamps = first['timestamp'];
+            final indicators = first['indicators'];
+
+            if (timestamps is List && indicators is Map<String, dynamic>) {
+              final quote = indicators['quote'];
+              if (quote is List && quote.isNotEmpty && quote.first is Map) {
+                final quoteMap = quote.first as Map<String, dynamic>;
+                final closes = quoteMap['close'];
+                if (closes is List) {
+                  final points = <_GrowthPoint>[];
+                  final length = math.min(timestamps.length, closes.length);
+
+                  for (int i = 0; i < length; i++) {
+                    final rawClose = closes[i];
+                    final rawTime = timestamps[i];
+                    if (rawClose is! num || rawTime is! num) {
+                      continue;
+                    }
+
+                    final dt = DateTime.fromMillisecondsSinceEpoch(
+                      rawTime.toInt() * 1000,
+                    );
+                    final label =
+                        '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}';
+                    points.add(
+                      _GrowthPoint(label: label, value: rawClose.toDouble()),
+                    );
+                  }
+
+                  return points;
+                }
+              }
             }
           }
         }
-        closeSet ??= datasets.isNotEmpty
-            ? Map<String, dynamic>.from(datasets.first as Map)
-            : null;
-        if (closeSet != null && closeSet['data'] is List) {
-          final rawData = closeSet['data'] as List;
-          final points = <_GrowthPoint>[];
-          for (int i = 0; i < rawData.length; i++) {
-            final item = rawData[i];
-            double? value;
-            final label = timeLabels.length > i ? timeLabels[i] : 'P\${i + 1}';
-            if (item is List && item.length >= 2) {
-              value = (item[1] as num?)?.toDouble();
-            } else if (item is Map) {
-              value = ((item['y'] ?? item['value'] ?? item['close']) as num?)
-                  ?.toDouble();
-            } else if (item is num) {
-              value = item.toDouble();
-            }
-            if (value != null) {
-              points.add(_GrowthPoint(label: label, value: value));
-            }
-          }
-          return points;
-        }
-      }
-      // Format B: [ { "date": "...", "close": ... } ]
-      if (data is List) {
-        final points = <_GrowthPoint>[];
-        for (final item in data) {
-          if (item is Map) {
-            final val = (item['close'] ??
-                item['price'] ??
-                item['value'] ??
-                item['last']) as num?;
-            final label = (item['date'] ?? item['label'] ?? item['time'] ?? '')
-                .toString();
-            if (val != null) {
-              points.add(_GrowthPoint(label: label, value: val.toDouble()));
-            }
-          }
-        }
-        return points;
       }
     } catch (_) {}
     return [];
@@ -393,6 +423,15 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
     );
   }
 
+  Future<void> _handleBack() async {
+    final popped = await Navigator.maybePop(context);
+    if (!popped && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const UserDashboard()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -414,7 +453,7 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
               ),
             ),
             leading: IconButton(
-              onPressed: () => Navigator.maybePop(context),
+              onPressed: _handleBack,
               icon: const Icon(Icons.arrow_back_rounded, color: _textPrimary),
             ),
             actions: [
@@ -974,7 +1013,7 @@ class _UserInvestmentsPageState extends State<UserInvestmentsPage> {
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: const InputDecoration(
-                      hintText: 'e.g. Nifty 50, Tata Steel...',
+                      hintText: 'e.g. Nifty 50, Reliance, TCS...',
                       hintStyle: TextStyle(
                         color: _textMuted,
                         fontSize: 13,

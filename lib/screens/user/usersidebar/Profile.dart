@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../user_dashboard.dart';
+
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -80,6 +82,15 @@ class _ProfilePageState extends State<ProfilePage> {
     nextController.dispose();
   }
 
+  Future<void> _handleBack() async {
+    final popped = await Navigator.maybePop(context);
+    if (!popped && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const UserDashboard()),
+      );
+    }
+  }
+
   Future<void> _confirmSignOut() async {
     final shouldSignOut = await showDialog<bool>(
       context: context,
@@ -147,7 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         centerTitle: false,
         leading: IconButton(
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: _handleBack,
           icon: const Icon(Icons.arrow_back_rounded, color: _textPrimary),
         ),
         actions: [

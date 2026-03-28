@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../user_dashboard.dart';
+
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
 
@@ -129,6 +131,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
     _showMessage('Exported ${_filteredTransactions.length} transactions.');
   }
 
+  Future<void> _handleBack() async {
+    final popped = await Navigator.maybePop(context);
+    if (!popped && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const UserDashboard()),
+      );
+    }
+  }
+
   String _money(double amount, {bool signed = false, bool isIncome = false}) {
     final rounded = amount.toStringAsFixed(0);
     final parts = rounded.split('');
@@ -158,7 +169,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w800),
         ),
         leading: IconButton(
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: _handleBack,
           icon: const Icon(Icons.arrow_back_rounded, color: _textPrimary),
         ),
         actions: [
@@ -191,6 +202,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 children: [
                   _buildSummaryCards(),
                   const SizedBox(height: 20),
+                  _buildTipCard(),
+                  const SizedBox(height: 14),
                   _buildSearchBar(),
                   const SizedBox(height: 14),
                   _buildFilterTabs(),
@@ -329,6 +342,35 @@ class _TransactionsPageState extends State<TransactionsPage> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTipCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _lime.withOpacity(0.12)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lightbulb_outline_rounded, color: _lime, size: 18),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Tip: use filters to quickly separate income and expense entries before exporting.',
+              style: TextStyle(
+                color: _textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

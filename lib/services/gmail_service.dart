@@ -34,6 +34,9 @@ class GmailService {
   GoogleSignInAccount? _currentUser;
   gmail.GmailApi? _gmailApi;
   http.Client? _authClient;
+  bool _demoMode = false;
+
+  bool get isDemoMode => _demoMode;
 
   GoogleSignInAccount? get currentUser =>
       _currentUser ?? _googleSignIn.currentUser;
@@ -70,6 +73,10 @@ class GmailService {
   }
 
   Future<bool> restoreSession() async {
+    if (_demoMode) {
+      return true;
+    }
+
     try {
       final signedUser = _googleSignIn.currentUser;
       if (signedUser != null) {
@@ -98,6 +105,10 @@ class GmailService {
   }
 
   Future<void> _ensureApiReady() async {
+    if (_demoMode) {
+      return;
+    }
+
     if (_gmailApi != null && _currentUser != null) {
       return;
     }
@@ -119,6 +130,7 @@ class GmailService {
       }
 
       await _initializeApi(account);
+      _demoMode = false;
       return true;
     } on PlatformException catch (error) {
       final code = error.code.toLowerCase();
@@ -128,23 +140,43 @@ class GmailService {
 
       final message = (error.message ?? '').trim();
       final details = message.isEmpty ? error.code : '$message (${error.code})';
+      if (_shouldUseDebugWebFallback(details)) {
+        _demoMode = true;
+        return true;
+      }
+
       throw Exception(_signInHelpMessage(details));
     } catch (error) {
+      if (_shouldUseDebugWebFallback(error.toString())) {
+        _demoMode = true;
+        return true;
+      }
+
       throw Exception(_signInHelpMessage(error.toString()));
     }
   }
 
   /// Sign out user
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    if (!_demoMode) {
+      await _googleSignIn.signOut();
+    }
     _currentUser = null;
     _gmailApi = null;
     _authClient?.close();
     _authClient = null;
+    _demoMode = false;
   }
 
   /// Get unread emails from Gmail inbox
   Future<List<GmailEmailModel>> getUnreadEmails({int maxResults = 10}) async {
+    if (_demoMode) {
+      return _mockEmails()
+          .where((email) => email.isUnread)
+          .take(maxResults)
+          .toList();
+    }
+
     await _ensureApiReady();
 
     try {
@@ -181,6 +213,10 @@ class GmailService {
 
   /// Get all emails from Gmail inbox
   Future<List<GmailEmailModel>> getAllEmails({int maxResults = 20}) async {
+    if (_demoMode) {
+      return _mockEmails().take(maxResults).toList();
+    }
+
     await _ensureApiReady();
 
     try {
@@ -255,6 +291,10 @@ class GmailService {
 
   /// Get email labels
   Future<List<String>> getLabels() async {
+    if (_demoMode) {
+      return const ['INBOX', 'UNREAD', 'STARRED'];
+    }
+
     await _ensureApiReady();
 
     try {
@@ -273,6 +313,10 @@ class GmailService {
     String? cc,
     String? bcc,
   }) async {
+    if (_demoMode) {
+      return;
+    }
+
     await _ensureApiReady();
 
     if (to.trim().isEmpty) {
@@ -315,6 +359,53 @@ class GmailService {
       }
       throw Exception('Unable to send Gmail message. $error');
     }
+  }
+
+  bool _shouldUseDebugWebFallback(String details) {
+    if (!kDebugMode || !kIsWeb) return false;
+
+    final lower = details.toLowerCase();
+    return lower.contains('clientid not set') ||
+        lower.contains('appclientid != null') ||
+        lower.contains('invalid_client') ||
+        lower.contains('unauthorized_client') ||
+        lower.contains('developer error') ||
+        lower.contains('oauth') ||
+        lower.contains('client id');
+  }
+
+  List<GmailEmailModel> _mockEmails() {
+    final now = DateTime.now();
+    return [
+      GmailEmailModel(
+        id: 'demo_1',
+        from: 'Finance Bot <noreply@demo.local>',
+        subject: 'Welcome to Inbox Demo Mode',
+        snippet: 'Google OAuth is not configured, so demo emails are shown.',
+        date: now.subtract(const Duration(minutes: 12)),
+        isUnread: true,
+        body:
+            'This is a local demo message. Configure Google OAuth client IDs to load real Gmail inbox data.',
+      ),
+      GmailEmailModel(
+        id: 'demo_2',
+        from: 'HR Desk <hr@demo.local>',
+        subject: 'Monthly Payroll Reminder',
+        snippet: 'Payroll review is due by end of day Friday.',
+        date: now.subtract(const Duration(hours: 3)),
+        isUnread: false,
+        body: 'Please review and approve payroll summary before the deadline.',
+      ),
+      GmailEmailModel(
+        id: 'demo_3',
+        from: 'Admin Alerts <alerts@demo.local>',
+        subject: 'Security Notice',
+        snippet: 'Two-factor authentication is recommended for all managers.',
+        date: now.subtract(const Duration(days: 1)),
+        isUnread: true,
+        body: 'Enable 2FA in account settings to improve security posture.',
+      ),
+    ];
   }
 }
 

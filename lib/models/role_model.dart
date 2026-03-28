@@ -4,6 +4,7 @@ class RoleNames {
   static const String hrManager = 'HR Manager';
   static const String financeManager = 'Finance Manager';
   static const String companyAuthority = 'Company Authority';
+  static const String normalUser = 'Normal User';
 }
 
 class Permission {

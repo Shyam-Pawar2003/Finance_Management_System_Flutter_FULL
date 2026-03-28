@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../Mutal_fund.dart';
+import 'TaxSaver/Axis.dart';
+import 'TaxSaver/Canara.dart';
+import 'TaxSaver/Mirae.dart';
+import 'TaxSaver/Parag.dart';
+import 'TaxSaver/Quant.dart';
+
 class TaxSaverPage extends StatefulWidget {
   const TaxSaverPage({super.key});
 
@@ -110,6 +117,15 @@ class _TaxSaverPageState extends State<TaxSaverPage> {
     );
   }
 
+  Future<void> _handleBack() async {
+    final popped = await Navigator.maybePop(context);
+    if (!popped && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MutualFundsPage()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final funds = _visibleFunds;
@@ -119,6 +135,10 @@ class _TaxSaverPageState extends State<TaxSaverPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          onPressed: _handleBack,
+          icon: const Icon(Icons.arrow_back_rounded, color: _textPrimary),
+        ),
         title: const Text(
           'Tax Saver (ELSS)',
           style: TextStyle(
@@ -415,7 +435,7 @@ class _TaxSaverPageState extends State<TaxSaverPage> {
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: () {
-                _showMessage('Added ${fund.name} to ELSS plan.');
+                _openFundDetails(fund.name);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _lime,
@@ -432,6 +452,27 @@ class _TaxSaverPageState extends State<TaxSaverPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _openFundDetails(String fundName) {
+    Widget page;
+    final lowerName = fundName.toLowerCase();
+
+    if (lowerName.contains('axis')) {
+      page = const AxisTaxSaverPage();
+    } else if (lowerName.contains('canara')) {
+      page = const CanaraTaxSaverPage();
+    } else if (lowerName.contains('mirae')) {
+      page = const MiraeTaxSaverPage();
+    } else if (lowerName.contains('parag')) {
+      page = const ParagTaxSaverPage();
+    } else {
+      page = const QuantTaxSaverPage();
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => page),
     );
   }
 

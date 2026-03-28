@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'Toprated/Hdfc.dart';
+import 'Toprated/Icici.dart';
+import 'Toprated/Mirae.dart';
+import 'Toprated/Nifty.dart';
+import 'Toprated/ParagTrack.dart';
 
 class TopRatedPage extends StatefulWidget {
   const TopRatedPage({super.key});
@@ -342,7 +347,7 @@ class _TopRatedPageState extends State<TopRatedPage> {
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: () {
-                _showMessage('Added ${fund.name} to watchlist.');
+                _openFundDetails(fund.name);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _lime,
@@ -359,6 +364,27 @@ class _TopRatedPageState extends State<TopRatedPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _openFundDetails(String fundName) {
+    Widget page;
+    final lowerName = fundName.toLowerCase();
+
+    if (lowerName.contains('parag')) {
+      page = const ParagTrackTopRatedPage();
+    } else if (lowerName.contains('hdfc')) {
+      page = const HdfcTopRatedPage();
+    } else if (lowerName.contains('nifty')) {
+      page = const NiftyTopRatedPage();
+    } else if (lowerName.contains('mirae')) {
+      page = const MiraeTopRatedPage();
+    } else {
+      page = const IciciTopRatedPage();
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => page),
     );
   }
 

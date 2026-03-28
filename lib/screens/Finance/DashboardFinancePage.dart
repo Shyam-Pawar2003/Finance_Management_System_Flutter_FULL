@@ -612,7 +612,13 @@ class _DashboardFinancePageState extends State<DashboardFinancePage> {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Opening full transaction list soon.'),
+                    ),
+                  );
+                },
                 child: const Text('View all'),
               ),
             ],

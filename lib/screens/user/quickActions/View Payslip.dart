@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../user_dashboard.dart';
 
 class ViewPayslipPage extends StatefulWidget {
   const ViewPayslipPage({super.key});
@@ -81,6 +82,16 @@ class _ViewPayslipPageState extends State<ViewPayslipPage> {
       insurance: 135,
     ),
   ];
+
+  Future<void> _handleBackNavigation() async {
+    final didPop = await Navigator.maybePop(context);
+    if (!didPop && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const UserDashboard()),
+      );
+    }
+  }
 
   _PayslipRecord get _currentRecord {
     return _payslips.firstWhere(
@@ -200,7 +211,7 @@ class _ViewPayslipPageState extends State<ViewPayslipPage> {
     return Row(
       children: [
         IconButton(
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: _handleBackNavigation,
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: 'Back',
         ),

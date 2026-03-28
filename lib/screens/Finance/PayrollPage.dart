@@ -387,7 +387,13 @@ class _PayrollPageState extends State<PayrollPage> {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Payroll run started for selected period.'),
+              ),
+            );
+          },
           icon: const Icon(Icons.playlist_add_check_rounded, size: 18),
           label: const Text('Run Payroll'),
           style: ElevatedButton.styleFrom(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../user_dashboard.dart';
+
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
 
@@ -108,6 +110,15 @@ class _CalendarPageState extends State<CalendarPage> {
     _focusedMonth = DateTime(_selectedDate.year, _selectedDate.month);
   }
 
+  Future<void> _handleBack() async {
+    final popped = await Navigator.maybePop(context);
+    if (!popped && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const UserDashboard()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final monthEntries =
@@ -128,7 +139,7 @@ class _CalendarPageState extends State<CalendarPage> {
           style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w800),
         ),
         leading: IconButton(
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: _handleBack,
           icon: const Icon(Icons.arrow_back_rounded, color: _textPrimary),
         ),
       ),
@@ -157,6 +168,8 @@ class _CalendarPageState extends State<CalendarPage> {
                     manualCount: manualCount,
                   ),
                   const SizedBox(height: 18),
+                  _buildTipCard(),
+                  const SizedBox(height: 14),
                   _buildCalendarCard(monthEntries),
                   const SizedBox(height: 22),
                   _buildScheduleHeader(selectedEntries.length),
@@ -225,6 +238,35 @@ class _CalendarPageState extends State<CalendarPage> {
                 value: '$manualCount bills',
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _lime.withOpacity(0.12)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, color: _lime, size: 18),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Tip: tap any date to see due bills for that day and stay ahead of payment deadlines.',
+              style: TextStyle(
+                color: _textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),

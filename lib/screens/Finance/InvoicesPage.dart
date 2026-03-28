@@ -313,7 +313,13 @@ class _InvoicesPageState extends State<InvoicesPage> {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invoice creation wizard will open here.'),
+              ),
+            );
+          },
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Create Invoice'),
           style: ElevatedButton.styleFrom(

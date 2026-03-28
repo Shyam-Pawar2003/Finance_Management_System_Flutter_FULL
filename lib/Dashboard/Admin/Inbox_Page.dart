@@ -425,6 +425,21 @@ class _InboxPageState extends State<InboxPage> {
           },
         ),
         const SizedBox(height: 16),
+        if (_isSignedIn && _gmailService.isDemoMode)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.shade200),
+            ),
+            child: Text(
+              'Demo inbox mode is active for local development. Configure Google OAuth to load real Gmail messages.',
+              style: TextStyle(color: Colors.amber.shade900),
+            ),
+          ),
         if (_isBootstrapping)
           const Expanded(
             child: Center(

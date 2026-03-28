@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../user_dashboard.dart';
 
 class ApplyLeavePage extends StatefulWidget {
   const ApplyLeavePage({super.key});
@@ -43,6 +44,16 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
     _ApprovalStep(name: 'HR Review', status: 'Queued'),
     _ApprovalStep(name: 'Payroll Sync', status: 'Auto'),
   ];
+
+  Future<void> _handleBackNavigation() async {
+    final didPop = await Navigator.maybePop(context);
+    if (!didPop && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const UserDashboard()),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -189,7 +200,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
     return Row(
       children: [
         IconButton(
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: _handleBackNavigation,
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: 'Back',
         ),

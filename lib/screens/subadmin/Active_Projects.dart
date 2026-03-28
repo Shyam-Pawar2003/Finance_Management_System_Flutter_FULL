@@ -8,7 +8,8 @@ class SubAdminActiveProjectsPage extends StatefulWidget {
       _SubAdminActiveProjectsPageState();
 }
 
-class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage> {
+class _SubAdminActiveProjectsPageState
+    extends State<SubAdminActiveProjectsPage> {
   String _searchQuery = '';
   String _selectedDepartment = 'All';
   String _selectedStatus = 'All';
@@ -160,8 +161,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
   }
 
   List<String> get _departments {
-    final values = _projects.map((project) => project.department).toSet().toList()
-      ..sort();
+    final values =
+        _projects.map((project) => project.department).toSet().toList()..sort();
     return ['All', ...values];
   }
 
@@ -175,14 +176,18 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
           project.department.toLowerCase().contains(query) ||
           project.manager.toLowerCase().contains(query);
 
-      final matchesDepartment =
-          _selectedDepartment == 'All' || project.department == _selectedDepartment;
+      final matchesDepartment = _selectedDepartment == 'All' ||
+          project.department == _selectedDepartment;
 
-      final matchesStatus = _selectedStatus == 'All' || project.status == _selectedStatus;
+      final matchesStatus =
+          _selectedStatus == 'All' || project.status == _selectedStatus;
 
       final matchesPriority = !_highPriorityOnly || project.priority == 'High';
 
-      return matchesSearch && matchesDepartment && matchesStatus && matchesPriority;
+      return matchesSearch &&
+          matchesDepartment &&
+          matchesStatus &&
+          matchesPriority;
     }).toList();
 
     switch (_selectedSort) {
@@ -196,7 +201,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
         list.sort((a, b) => a.nextDeadline.compareTo(b.nextDeadline));
         break;
       default:
-        list.sort((a, b) => _priorityWeight(b.priority).compareTo(_priorityWeight(a.priority)));
+        list.sort((a, b) =>
+            _priorityWeight(b.priority).compareTo(_priorityWeight(a.priority)));
     }
 
     return list;
@@ -230,7 +236,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
     if (list.isEmpty) {
       return 0;
     }
-    final total = list.fold<double>(0, (sum, project) => sum + project.progress);
+    final total =
+        list.fold<double>(0, (sum, project) => sum + project.progress);
     return total / list.length;
   }
 
@@ -319,7 +326,11 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
       runSpacing: 8,
       children: [
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Project plan export started.')),
+            );
+          },
           icon: const Icon(Icons.file_download_outlined, size: 18),
           label: const Text('Export Plan'),
           style: OutlinedButton.styleFrom(
@@ -328,13 +339,19 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Create project form will open here.')),
+            );
+          },
           icon: const Icon(Icons.add_task_rounded, size: 18),
           label: const Text('Create Project'),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF36B39C),
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
       ],
@@ -420,7 +437,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
               _heroChip('On Track', '${_countByStatus(projects, 'On Track')}'),
               _heroChip('At Risk', '${_countByStatus(projects, 'At Risk')}'),
               _heroChip('Delayed', '${_countByStatus(projects, 'Delayed')}'),
-              _heroChip('Completed', '${_countByStatus(projects, 'Completed')}'),
+              _heroChip(
+                  'Completed', '${_countByStatus(projects, 'Completed')}'),
             ],
           ),
         ],
@@ -492,7 +510,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
       ),
       _ProjectMetric(
         title: 'Budget Utilization',
-        value: '${(_usedBudget(projects) / (_totalBudget(projects) == 0 ? 1 : _totalBudget(projects)) * 100).toStringAsFixed(0)}%',
+        value:
+            '${(_usedBudget(projects) / (_totalBudget(projects) == 0 ? 1 : _totalBudget(projects)) * 100).toStringAsFixed(0)}%',
         subtitle: 'Current burn rate',
         icon: Icons.account_balance_wallet_outlined,
         color: const Color(0xFF7C3AED),
@@ -646,7 +665,9 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
       selectedColor: const Color(0xFFDB4437).withOpacity(0.14),
       side: const BorderSide(color: Color(0xFFD5DEE9)),
       labelStyle: TextStyle(
-        color: _highPriorityOnly ? const Color(0xFFDB4437) : const Color(0xFF334155),
+        color: _highPriorityOnly
+            ? const Color(0xFFDB4437)
+            : const Color(0xFF334155),
         fontWeight: FontWeight.w600,
       ),
     );
@@ -680,7 +701,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
             const SizedBox(height: 10),
             sort,
             const SizedBox(height: 10),
-            Wrap(spacing: 8, runSpacing: 8, children: [highPriorityOnly, reset]),
+            Wrap(
+                spacing: 8, runSpacing: 8, children: [highPriorityOnly, reset]),
           ] else ...[
             Row(
               children: [
@@ -694,7 +716,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
               ],
             ),
             const SizedBox(height: 10),
-            Wrap(spacing: 8, runSpacing: 8, children: [highPriorityOnly, reset]),
+            Wrap(
+                spacing: 8, runSpacing: 8, children: [highPriorityOnly, reset]),
           ],
         ],
       ),
@@ -812,7 +835,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(0xFF1A73E8).withOpacity(0.12),
+                      backgroundColor:
+                          const Color(0xFF1A73E8).withOpacity(0.12),
                       child: Text(
                         _initials(project.name),
                         style: const TextStyle(
@@ -896,7 +920,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
 
   Widget _buildInsightsPanel(List<_ProjectRecord> projects) {
     final departmentRows = _departmentRows(projects);
-    final topDeadlines = [...projects]..sort((a, b) => a.nextDeadline.compareTo(b.nextDeadline));
+    final topDeadlines = [...projects]
+      ..sort((a, b) => a.nextDeadline.compareTo(b.nextDeadline));
 
     return Column(
       children: [
@@ -964,44 +989,45 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
                 )
               else
                 ...topDeadlines.take(5).map(
-                  (project) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                project.name,
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              Text(
-                                project.department,
-                                style: const TextStyle(
-                                  color: Color(0xFF64748B),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
+                      (project) => Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
-                        Text(
-                          _dateLabel(project.nextDeadline),
-                          style: const TextStyle(
-                            color: Color(0xFF7C3AED),
-                            fontWeight: FontWeight.w700,
-                          ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    project.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                  Text(
+                                    project.department,
+                                    style: const TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              _dateLabel(project.nextDeadline),
+                              style: const TextStyle(
+                                color: Color(0xFF7C3AED),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
             ],
           ),
         ),
@@ -1016,11 +1042,14 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 10),
-              _actionButton(Icons.timeline_rounded, 'Open project timeline board'),
+              _actionButton(
+                  Icons.timeline_rounded, 'Open project timeline board'),
               const SizedBox(height: 8),
-              _actionButton(Icons.warning_amber_rounded, 'Review high-risk projects'),
+              _actionButton(
+                  Icons.warning_amber_rounded, 'Review high-risk projects'),
               const SizedBox(height: 8),
-              _actionButton(Icons.download_rounded, 'Export active projects report'),
+              _actionButton(
+                  Icons.download_rounded, 'Export active projects report'),
             ],
           ),
         ),
@@ -1031,7 +1060,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
   List<_DepartmentRow> _departmentRows(List<_ProjectRecord> list) {
     final counts = <String, int>{};
     for (final project in list) {
-      counts.update(project.department, (value) => value + 1, ifAbsent: () => 1);
+      counts.update(project.department, (value) => value + 1,
+          ifAbsent: () => 1);
     }
     final rows = counts.entries
         .map((entry) => _DepartmentRow(entry.key, entry.value))
@@ -1044,7 +1074,11 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$label started.')),
+          );
+        },
         icon: Icon(icon, size: 18, color: const Color(0xFF1A73E8)),
         label: Align(
           alignment: Alignment.centerLeft,
@@ -1060,7 +1094,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
           alignment: Alignment.centerLeft,
           side: const BorderSide(color: Color(0xFFD5DEE9)),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
     );
@@ -1142,7 +1177,8 @@ class _SubAdminActiveProjectsPageState extends State<SubAdminActiveProjectsPage>
     );
   }
 
-  InputDecoration _inputDecoration({String? labelText, String? hintText, Widget? prefixIcon}) {
+  InputDecoration _inputDecoration(
+      {String? labelText, String? hintText, Widget? prefixIcon}) {
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,

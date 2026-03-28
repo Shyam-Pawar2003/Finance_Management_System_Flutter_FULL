@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/auth_provider.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -29,6 +32,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     return Scaffold(
       backgroundColor: Colors.green.shade50,
       body: Center(
@@ -194,24 +198,55 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Account Created Successfully"),
+                          onPressed: auth.isLoading
+                              ? null
+                              : () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    final ok = await context
+                                        .read<AuthProvider>()
+                                        .register(
+                                          fullName: nameController.text,
+                                          email: emailController.text,
+                                          password: passwordController.text,
+                                        );
+                                    if (!mounted) return;
+
+                                    if (ok) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "Account Created Successfully"),
+                                        ),
+                                      );
+                                      Navigator.of(context)
+                                          .pushReplacementNamed('/home');
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            auth.errorMessage ??
+                                                'Registration failed. Please try again.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                          child: auth.isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  "CREATE ACCOUNT",
+                                  style: TextStyle(fontSize: 16),
                                 ),
-                              );
-                              // Navigate to login screen
-                              Future.delayed(const Duration(seconds: 1), () {
-                                Navigator.of(context)
-                                    .pushReplacementNamed('/login');
-                              });
-                            }
-                          },
-                          child: const Text(
-                            "CREATE ACCOUNT",
-                            style: TextStyle(fontSize: 16),
-                          ),
                         ),
                       ),
 

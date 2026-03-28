@@ -544,7 +544,7 @@ class _SubAdminDownloadPayrollSummaryPageState
                       ),
                     ),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () => _downloadAgain(item),
                       icon: const Icon(Icons.download_rounded),
                       color: const Color(0xFF1A73E8),
                       tooltip: 'Download again',

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/dashboard_seed_data.dart';
-import '../../../models/dashboard_models.dart';
 
 class GoalsExploreTab extends StatefulWidget {
   const GoalsExploreTab({super.key, required this.onActionTap});

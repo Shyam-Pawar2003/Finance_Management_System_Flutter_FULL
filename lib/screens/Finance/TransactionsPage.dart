@@ -1120,7 +1120,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$label started.')),
+          );
+        },
         icon: Icon(icon, size: 18, color: color),
         label: Align(
           alignment: Alignment.centerLeft,

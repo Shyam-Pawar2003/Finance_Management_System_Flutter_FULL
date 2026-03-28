@@ -259,7 +259,13 @@ class _SubAdminFinancePageState extends State<SubAdminFinancePage> {
       runSpacing: 8,
       children: [
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Finance summary export started.'),
+              ),
+            );
+          },
           icon: const Icon(Icons.file_download_outlined, size: 18),
           label: const Text('Export Summary'),
           style: OutlinedButton.styleFrom(

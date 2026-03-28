@@ -14,7 +14,7 @@ class HRDashboardPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(isCompact),
+              _buildHeader(context, isCompact),
               const SizedBox(height: 16),
               _buildHeroCard(isCompact),
               const SizedBox(height: 16),
@@ -62,7 +62,7 @@ class HRDashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(bool isCompact) {
+  Widget _buildHeader(BuildContext context, bool isCompact) {
     final today = DateTime.now();
     final dateLabel =
         '${_weekdayName(today.weekday)}, ${_monthName(today.month)} ${today.day}, ${today.year}';
@@ -94,7 +94,11 @@ class HRDashboardPage extends StatelessWidget {
       runSpacing: 10,
       children: [
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('HR snapshot export started.')),
+            );
+          },
           icon: const Icon(Icons.file_download_outlined, size: 18),
           label: const Text('Export Snapshot'),
           style: OutlinedButton.styleFrom(
@@ -104,7 +108,12 @@ class HRDashboardPage extends StatelessWidget {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Add employee flow will open here.')),
+            );
+          },
           icon: const Icon(Icons.group_add_rounded, size: 18),
           label: const Text('Add Employee'),
           style: ElevatedButton.styleFrom(

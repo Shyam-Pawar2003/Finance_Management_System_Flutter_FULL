@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../user_dashboard.dart';
 
 class SubmitReportPage extends StatefulWidget {
   const SubmitReportPage({super.key});
@@ -73,6 +74,16 @@ class _SubmitReportPageState extends State<SubmitReportPage> {
       reviewer: 'Compliance Desk',
     ),
   ];
+
+  Future<void> _handleBackNavigation() async {
+    final didPop = await Navigator.maybePop(context);
+    if (!didPop && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const UserDashboard()),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -226,7 +237,7 @@ class _SubmitReportPageState extends State<SubmitReportPage> {
     return Row(
       children: [
         IconButton(
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: _handleBackNavigation,
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: 'Back',
         ),

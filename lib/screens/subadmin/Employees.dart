@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'Active_Projects.dart';
 import 'Assign_employee_to_project.dart';
 import 'Export_employee_report.dart';
+import '../Finance/Pages/Employees/Add_Emloyee.dart';
 import 'Finance.dart';
 import 'HR.dart';
 import 'Legal.dart';
@@ -353,7 +354,11 @@ class _SubAdminEmployeesPageState extends State<SubAdminEmployeesPage> {
     );
 
     final action = ElevatedButton.icon(
-      onPressed: () {},
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AddEmployeePage()),
+        );
+      },
       icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
       label: const Text('Add Employee'),
       style: ElevatedButton.styleFrom(

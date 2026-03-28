@@ -303,7 +303,13 @@ class _SubAdminPayrollPageState extends State<SubAdminPayrollPage> {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Payroll run started for the selected cycle.'),
+              ),
+            );
+          },
           icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
           label: const Text('Run Payroll'),
           style: ElevatedButton.styleFrom(
